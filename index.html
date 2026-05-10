@@ -9,25 +9,41 @@
     <title>Whack a Mole</title>
   </head>
   <body>
-    <div class="box">
-      <h3 class="score">Score : <span>00</span></h3>
-      <h3 class="countdown">
-        Time Left : <span> 30 </span> <span> sec </span>
-      </h3>
+
+    <!-- Hammer cursor -->
+    <div id="cursor"></div>
+
+    <!-- Level-up banner -->
+    <div id="level-banner"></div>
+
+    <!-- HUD -->
+    <div id="hud">
+      <div class="hud-box">
+        <div class="hud-label">Score</div>
+        <div class="hud-val" id="score-el">00</div>
+      </div>
+      <span class="level-badge" id="level-el">Level 1</span>
+      <div class="hud-box">
+        <div class="hud-label">Time</div>
+        <div class="hud-val" id="time-el">30s</div>
+      </div>
     </div>
-    <div class="board">
-      <div class="hole"></div>
-      <div class="hole"></div>
-      <div class="hole"></div>
-      <div class="hole"></div>
-      <div class="hole"></div>
-      <div class="hole"></div>
-      <div class="hole"></div>
-      <div class="hole"></div>
-      <div class="hole"></div>
+
+    <!-- Progress bar -->
+    <p id="progress-label">hits to next level</p>
+    <div id="progress-bar-wrap">
+      <div id="progress-bar"></div>
     </div>
-    <div class="cursor"></div>
-    <div class="finalScore"></div>
-    <button class="restartBtn">Restart</button>
+
+    <!-- Game board (holes injected by JS) -->
+    <div id="board"></div>
+
+    <!-- Start / Game-over overlay -->
+    <div id="overlay">
+      <h2>Whack-a-Mole!</h2>
+      <p>Hit moles to score. Level up by hitting enough — more holes appear as you improve!</p>
+      <button class="btn gold" id="start-btn">Start Game</button>
+    </div>
+
   </body>
 </html>
