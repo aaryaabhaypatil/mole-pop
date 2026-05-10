@@ -98,9 +98,7 @@ SquidlyAPI.addSessionInfoListener((info) => {
   }
 });
 
-// ═════════════════════════════════════════════════════════════════════════════
-//  HOST
-// ═════════════════════════════════════════════════════════════════════════════
+
 function initHost() {
   showStartOverlay();
 
@@ -176,7 +174,7 @@ function hostStartGame() {
 function hostStartTimer() {
   clearInterval(timerId);
   timerId = setInterval(() => {
-    if (!state.running) return; // pause during level break overlay
+    if (!state.running) return; 
     state.timeLeft--;
     timeEl.textContent = state.timeLeft + 's';
     SquidlyAPI.firebaseSet('game/timeLeft', state.timeLeft);
@@ -328,12 +326,12 @@ function showLevelBreakOverlay() {
 
 function startNextLevel() {
   state.running  = true;
-  state.timeLeft = LEVELS[state.level].timeLimit; // reset timer for new level
+  state.timeLeft = LEVELS[state.level].timeLimit; 
   holeHitLock    = {};
 
   SquidlyAPI.firebaseSet('game/levelBreak', false);
   SquidlyAPI.firebaseSet('game/running',    true);
-  SquidlyAPI.firebaseSet('game/timeLeft',   state.timeLeft); // sync fresh time to participant
+  SquidlyAPI.firebaseSet('game/timeLeft',   state.timeLeft);
 
   levelEl.textContent     = 'Level ' + (state.level + 1);
   progressBar.style.width = '0%';
@@ -357,9 +355,7 @@ function hostEndGame() {
   showEndOverlay(true);
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-//  PARTICIPANT
-// ═════════════════════════════════════════════════════════════════════════════
+
 function initParticipant() {
   cursorEl.style.display = 'block';
   document.addEventListener('mousemove', e => {
@@ -433,7 +429,6 @@ function initParticipant() {
     state.level = val;
     levelEl.textContent = 'Level ' + (val + 1);
     progressBar.style.width = '0%';
-    // No buildBoard here — levelBreak listener handles that
   });
 
   SquidlyAPI.firebaseOnValue('game/hitsThisLevel', val => {
@@ -460,7 +455,6 @@ function initParticipant() {
     } else if (val === false && currentSessionId) {
       overlay.style.display = 'none';
       state.running = true;
-      // Small delay so game/level listener always settles before we build the board
       setTimeout(() => buildBoard(LEVELS[state.level].holes), 50);
     }
   });
@@ -520,9 +514,7 @@ function initParticipant() {
   });
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-//  SHARED HELPERS
-// ═════════════════════════════════════════════════════════════════════════════
+
 
 function buildBoard(numHoles) {
   board.innerHTML = '';
@@ -610,14 +602,9 @@ function updateProgress() {
 }
 
 function showLevelBanner() {
-  // banner.textContent = state.level === MAX_LEVEL
-  //   ? 'Max Level! 🔥'
-  //   : 'Level ' + (state.level + 1) + '! 🎉';
-  // banner.classList.add('show');
-  // setTimeout(() => banner.classList.remove('show'), 1500);
+
 }
 
-// Returns a themed message object for level break overlays
 function getLevelBreakMessage(level) {
   const messages = [
     { emoji: '', taunt: 'Too easy? More holes incoming!',      tip: 'Moles are getting sneakier — stay sharp!' },
@@ -628,7 +615,7 @@ function getLevelBreakMessage(level) {
   return messages[Math.min(level - 1, messages.length - 1)];
 }
 
-// ── Overlay screens ────────────────────────────────────────────────────────
+
 
 function instructionsHTML() {
   return `
