@@ -526,7 +526,7 @@ function buildBoard(numHoles) {
   const gap  = 32;
 
   const maxSizeByHoles = {
-    4: 200,
+    4: 240,
     6: 240,
     8: 170,  // 4x2 grid — sized to fit comfortably
   };
