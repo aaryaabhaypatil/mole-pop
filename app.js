@@ -68,7 +68,7 @@ const LEVELS = [
   { holes: 4,  hitsToAdvance: 5,  moleTime: 2500, timeLimit: 45 },
   { holes: 6,  hitsToAdvance: 7,  moleTime: 2000, timeLimit: 50 },
   { holes: 6,  hitsToAdvance: 10, moleTime: 1800, timeLimit: 50 },
-  { holes: 9,  hitsToAdvance: 12, moleTime: 1500, timeLimit: 60 },
+  { holes: 8,  hitsToAdvance: 12, moleTime: 1500, timeLimit: 60 }, // 8 holes, 4x2 grid
 ];
 const MAX_LEVEL = LEVELS.length - 1;
 
@@ -174,7 +174,7 @@ function hostStartGame() {
 function hostStartTimer() {
   clearInterval(timerId);
   timerId = setInterval(() => {
-    if (!state.running) return; 
+    if (!state.running) return;
     state.timeLeft--;
     timeEl.textContent = state.timeLeft + 's';
     SquidlyAPI.firebaseSet('game/timeLeft', state.timeLeft);
@@ -326,7 +326,7 @@ function showLevelBreakOverlay() {
 
 function startNextLevel() {
   state.running  = true;
-  state.timeLeft = LEVELS[state.level].timeLimit; 
+  state.timeLeft = LEVELS[state.level].timeLimit;
   holeHitLock    = {};
 
   SquidlyAPI.firebaseSet('game/levelBreak', false);
@@ -445,7 +445,7 @@ function initParticipant() {
 
       const msg = getLevelBreakMessage(state.level);
       overlay.innerHTML = `
-       
+        <div style="font-size:5rem; margin-bottom:0.2rem;">${msg.emoji}</div>
         <h2>Level ${state.level} Complete!</h2>
         <p style="font-weight:700; color:#ffd700;">${msg.taunt}</p>
         <p>${msg.tip}</p>
@@ -515,30 +515,37 @@ function initParticipant() {
 }
 
 
-
 function buildBoard(numHoles) {
   board.innerHTML = '';
   moleTimers.forEach(clearTimeout);
   moleTimers = [];
 
-  const cols = numHoles <= 4 ? 2 : 3;
+  // 8 holes → 4 columns × 2 rows; everything else uses the existing logic
+  const cols = numHoles === 8 ? 4 : numHoles <= 4 ? 2 : 3;
   const rows = Math.ceil(numHoles / cols);
-  const gap = 32;
+  const gap  = 32;
+
+  const maxSizeByHoles = {
+    4: 200,
+    6: 240,
+    8: 170,  // 4x2 grid — sized to fit comfortably
+  };
+  const maxCap = maxSizeByHoles[numHoles] ?? 200;
 
   const availableW = window.innerWidth * 0.92;
   const availableH = window.innerHeight - 180;
 
   const sizeByW = Math.floor((availableW - (cols + 1) * gap) / cols);
   const sizeByH = Math.floor((availableH - (rows + 1) * gap) / rows);
-  const size = Math.min(sizeByW, sizeByH, 350);
+  const size    = Math.min(sizeByW, sizeByH, maxCap);
 
   board.style.gridTemplateColumns = `repeat(${cols}, ${size}px)`;
-  board.style.gap = gap + 'px';
+  board.style.gap        = gap + 'px';
   board.style.paddingLeft = numHoles >= 6 ? '80px' : '0px';
 
   for (let i = 0; i < numHoles; i++) {
     const hole = document.createElement('div');
-    hole.className = 'hole';
+    hole.className    = 'hole';
     hole.style.width  = size + 'px';
     hole.style.height = size + 'px';
 
@@ -601,21 +608,17 @@ function updateProgress() {
     `${state.hitsThisLevel} / ${cfg.hitsToAdvance} hits to level ${state.level + 2}`;
 }
 
-function showLevelBanner() {
-
-}
+function showLevelBanner() {}
 
 function getLevelBreakMessage(level) {
   const messages = [
-    { emoji: '', taunt: 'Too easy? More holes incoming!',      tip: 'Moles are getting sneakier — stay sharp!' },
-    { emoji: '', taunt: 'They\'re speeding up!',               tip: 'Watch all 6 holes — they\'ll try to fake you out.' },
-    { emoji: '', taunt: 'The moles are furious!',              tip: 'Hit fast — they won\'t stay up for long.' },
-    { emoji: '', taunt: 'FINAL LEVEL. 9 holes. Good luck.',    tip: 'You\'ll need every bit of speed you\'ve got.' },
+    { emoji: '', taunt: 'Too easy? More holes incoming!',   tip: 'Moles are getting sneakier — stay sharp!' },
+    { emoji: '', taunt: 'They\'re speeding up!',            tip: 'Watch all 6 holes — they\'ll try to fake you out.' },
+    { emoji: '', taunt: 'The moles are furious!',           tip: 'Hit fast — they won\'t stay up for long.' },
+    { emoji: '', taunt: 'FINAL LEVEL. 8 holes. Good luck.', tip: 'You\'ll need every bit of speed you\'ve got.' },
   ];
   return messages[Math.min(level - 1, messages.length - 1)];
 }
-
-
 
 function instructionsHTML() {
   return `
@@ -625,7 +628,7 @@ function instructionsHTML() {
       padding:1.2rem 1.8rem; max-width:1000px; width:100%;
       margin-top:0.6rem;
     ">
-      <p style="font-weight:700; color:#ffd700; font-size:2.5rem; margin-bottom:0.2rem;">How to Play</p>
+      <p style="font-weight:700; color:#ffd700; font-size:2rem; margin-bottom:0.2rem;">How to Play</p>
       <p>&nbsp;Click the mole when it pops up</p>
       <p>&nbsp;Each hit scores <strong>10 points</strong></p>
       <p>&nbsp;Hit enough moles to level up</p>
