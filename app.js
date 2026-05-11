@@ -68,7 +68,7 @@ const LEVELS = [
   { holes: 4,  hitsToAdvance: 5,  moleTime: 2500, timeLimit: 45 },
   { holes: 6,  hitsToAdvance: 7,  moleTime: 2000, timeLimit: 50 },
   { holes: 6,  hitsToAdvance: 10, moleTime: 1800, timeLimit: 50 },
-  { holes: 8,  hitsToAdvance: 12, moleTime: 1500, timeLimit: 60 }, // 8 holes, 4x2 grid
+  { holes: 8,  hitsToAdvance: 12, moleTime: 1500, timeLimit: 60 },
 ];
 const MAX_LEVEL = LEVELS.length - 1;
 
@@ -304,11 +304,18 @@ function showLevelBreakOverlay() {
 
   const msg = getLevelBreakMessage(state.level);
   overlay.innerHTML = `
-    <div style="font-size:5rem; margin-bottom:0.2rem;">${msg.emoji}</div>
+    <img
+      src="./assets/mole.png"
+      alt="Mole"
+      onerror="this.style.display='none'"
+      style="width:120px; height:auto; margin-bottom:0.4rem; filter:drop-shadow(0 4px 12px rgba(0,0,0,0.6));"
+    />
     <h2>Level ${state.level} Complete!</h2>
-    <p style="font-weight:700; color:#ffd700;">${msg.taunt}</p>
-    <p>${msg.tip}</p>
-    <p style="opacity:0.6; font-size:2.5rem; margin-top:0.4rem;">Score so far: <strong style="color:#ffd700;">${state.score}</strong></p>
+    ${cardHTML([
+      { label: msg.taunt, gold: true },
+      { label: msg.tip },
+      { label: 'Score so far: <strong style="color:#ffd700;">' + state.score + '</strong>', muted: true },
+    ])}
   `;
   overlay.style.display = 'flex';
 
@@ -445,11 +452,18 @@ function initParticipant() {
 
       const msg = getLevelBreakMessage(state.level);
       overlay.innerHTML = `
-        <div style="font-size:5rem; margin-bottom:0.2rem;">${msg.emoji}</div>
+        <img
+          src="./assets/mole.png"
+          alt="Mole"
+          onerror="this.style.display='none'"
+          style="width:120px; height:auto; margin-bottom:0.4rem; filter:drop-shadow(0 4px 12px rgba(0,0,0,0.6));"
+        />
         <h2>Level ${state.level} Complete!</h2>
-        <p style="font-weight:700; color:#ffd700;">${msg.taunt}</p>
-        <p>${msg.tip}</p>
-        <p style="opacity:0.6; font-size:2.5rem; margin-top:0.4rem;">Score so far: <strong style="color:#ffd700;">${state.score}</strong></p>
+        ${cardHTML([
+          { label: msg.taunt, gold: true },
+          { label: msg.tip },
+          { label: 'Score so far: <strong style="color:#ffd700;">' + state.score + '</strong>', muted: true },
+        ])}
       `;
       overlay.style.display = 'flex';
     } else if (val === false && currentSessionId) {
@@ -520,7 +534,6 @@ function buildBoard(numHoles) {
   moleTimers.forEach(clearTimeout);
   moleTimers = [];
 
-  // 8 holes → 4 columns × 2 rows; everything else uses the existing logic
   const cols = numHoles === 8 ? 4 : numHoles <= 4 ? 2 : 3;
   const rows = Math.ceil(numHoles / cols);
   const gap  = 32;
@@ -528,7 +541,7 @@ function buildBoard(numHoles) {
   const maxSizeByHoles = {
     4: 240,
     6: 240,
-    8: 170,  // 4x2 grid — sized to fit comfortably
+    8: 170,
   };
   const maxCap = maxSizeByHoles[numHoles] ?? 240;
 
@@ -620,49 +633,68 @@ function getLevelBreakMessage(level) {
   return messages[Math.min(level - 1, messages.length - 1)];
 }
 
-function instructionsHTML() {
+
+function cardHTML(items) {
+  const rows = items.map(item => {
+    let style = 'font-size:1.3rem;';
+    if (item.gold)    style += 'font-weight:700; color:#ffd700;';
+    if (item.muted)   style += 'opacity:0.6;';
+    if (item.heading) style += 'font-weight:700; color:#ffd700; font-size:1.5rem; margin-bottom:0.2rem;';
+    return `<p style="${style}">${item.label}</p>`;
+  }).join('');
+
   return `
     <div style="
       display:flex; flex-direction:column; gap:0.6rem;
       background:rgba(255,255,255,0.08); border-radius:12px;
-      padding:1.2rem 1.8rem; max-width:1000px; width:100%;
+      padding:1.2rem 1.8rem; max-width:420px; width:100%;
       margin-top:0.6rem;
-    ">
-      <p style="font-weight:700; color:#ffd700; font-size:2rem; margin-bottom:0.2rem;">How to Play</p>
-      <p>&nbsp;Click the mole when it pops up</p>
-      <p>&nbsp;Each hit scores <strong>10 points</strong></p>
-      <p>&nbsp;Hit enough moles to level up</p>
-      <p>&nbsp;Beat the clock before time runs out!</p>
-      <p>&nbsp;More holes appear as you progress</p>
-    </div>
+    ">${rows}</div>
   `;
 }
 
-function showStartOverlay() {
-  overlay.innerHTML = `
+
+
+function moleImgHTML() {
+  return `
     <img
       src="./assets/mole.png"
       alt="Mole"
       onerror="this.style.display='none'"
       style="width:120px; height:auto; margin-bottom:0.4rem; filter:drop-shadow(0 4px 12px rgba(0,0,0,0.6));"
     />
+  `;
+}
+
+function showStartOverlay() {
+  overlay.innerHTML = `
+    ${moleImgHTML()}
     <h2>Whack-a-Mole!</h2>
-    ${instructionsHTML()}
+    ${cardHTML([
+      { label: 'How to Play', heading: true },
+      { label: '&nbsp;Click the mole when it pops up' },
+      { label: '&nbsp;Each hit scores <strong>10 points</strong>' },
+      { label: '&nbsp;Hit enough moles to level up' },
+      { label: '&nbsp;Beat the clock before time runs out!' },
+      { label: '&nbsp;More holes appear as you progress' },
+    ])}
   `;
   overlay.style.display = 'flex';
 }
 
 function showWaitingOverlay() {
   overlay.innerHTML = `
-    <img
-      src="./assets/mole.png"
-      alt="Mole"
-      onerror="this.style.display='none'"
-      style="width:120px; height:auto; margin-bottom:0.4rem; filter:drop-shadow(0 4px 12px rgba(0,0,0,0.6));"
-    />
+    ${moleImgHTML()}
     <h2>Whack-a-Mole!</h2>
-    ${instructionsHTML()}
-    <p style="opacity:0.5; font-size:2rem; margin-top:0.6rem;">Waiting for the host to start…</p>
+    ${cardHTML([
+      { label: 'How to Play', heading: true },
+      { label: '&nbsp;Click the mole when it pops up' },
+      { label: '&nbsp;Each hit scores <strong>10 points</strong>' },
+      { label: '&nbsp;Hit enough moles to level up' },
+      { label: '&nbsp;Beat the clock before time runs out!' },
+      { label: '&nbsp;More holes appear as you progress' },
+    ])}
+    <p style="opacity:0.5; font-size:1.1rem; margin-top:0.4rem;">Waiting for the host to start…</p>
   `;
   overlay.style.display = 'flex';
 }
@@ -674,11 +706,13 @@ function showEndOverlay(canRestart) {
 
   const great = state.score >= 100;
   overlay.innerHTML = `
-    <div style="font-size:5rem; margin-bottom:0.2rem;">${great ? '' : ''}</div>
+    ${moleImgHTML()}
     <h2>Game Over!</h2>
-    <p>You reached <strong>Level ${state.level + 1}</strong><br>
-       with a score of <strong style="color:#ffd700;">${state.score}</strong>.</p>
-    <p>${great ? 'Nicely done!' : 'The moles win this round…'}</p>
+    ${cardHTML([
+      { label: great ? 'Nicely done!' : 'The moles win this round…', gold: great },
+      { label: 'Level reached: <strong>' + (state.level + 1) + '</strong>' },
+      { label: 'Final score: <strong style="color:#ffd700;">' + state.score + '</strong>' },
+    ])}
   `;
   overlay.style.display = 'flex';
 
