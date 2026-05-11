@@ -530,7 +530,7 @@ function buildBoard(numHoles) {
     6: 240,
     8: 170,  // 4x2 grid — sized to fit comfortably
   };
-  const maxCap = maxSizeByHoles[numHoles] ?? 200;
+  const maxCap = maxSizeByHoles[numHoles] ?? 240;
 
   const availableW = window.innerWidth * 0.92;
   const availableH = window.innerHeight - 180;
