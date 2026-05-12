@@ -209,6 +209,7 @@ function hostPopMole() {
   wrap.addEventListener('mousedown', e => {
     if (holeHitLock[holeIndex] || !state.running) return;
     holeHitLock[holeIndex] = true;
+    cursorEl.classList.add('active');
     e.stopPropagation();
     SquidlyAPI.firebaseSet('game/moleHit',   true);
     SquidlyAPI.firebaseSet('game/moleHitBy', 'host');
@@ -493,6 +494,7 @@ function initParticipant() {
       wrap.addEventListener('mousedown', e => {
         if (localHit || !state.running) return;
         localHit = true;
+        cursorEl.classList.add('active');
         e.stopPropagation();
         whackMole(wrap, hole);
         playSound();

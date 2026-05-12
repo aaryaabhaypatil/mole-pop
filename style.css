@@ -24,8 +24,8 @@ body {
 }
 
 #cursor {
-  width: 60px;
-  height: 60px;
+  width: 90px;
+  height: 90px;
   position: fixed;
   top: -9999px; left: -9999px;
   background-image: url('./assets/hammer.png');
