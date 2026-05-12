@@ -94,7 +94,7 @@ body {
   font-size: 3rem;
   opacity: 0.7;
   margin-bottom: 4px;
-  top: 45px;
+  top: 55px;
 }
 #progress-bar-wrap {
   position: relative;
@@ -105,7 +105,7 @@ body {
   height: 8px;
   margin-bottom: 0.5rem;
   overflow: hidden;
-  top: 55px;
+  top: 60px;
 }
 #progress-bar {
   height: 100%;
