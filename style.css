@@ -24,23 +24,19 @@ body {
 }
 
 #cursor {
-  width: 30px;
-  height: 30px;
-
-  top: -9999px;
-  left: -9999px;
-
+  width: 80px;
+  height: 80px;
+  position: fixed;
+  top: -9999px; left: -9999px;
   background-image: url('./assets/hammer.png');
   background-size: 100% 100%;
-
   transform: translate(-20%, -20%);
   transition: transform 0.08s;
-
   pointer-events: none;
   z-index: 999;
 }
 #cursor.active {
-  transform: translate(-20%, -20%) rotate(-45deg) scale(0.4);
+  transform: translate(-20%, -20%) rotate(-45deg) scale(0.85);
 }
 
 #hud {
