@@ -657,12 +657,15 @@ function cardHTML(items) {
 
 function moleImgHTML() {
   return `
-    <img
-      src="./assets/mole.png"
-      alt="Mole"
-      onerror="this.style.display='none'"
-      style="width:120px; height:auto; margin-bottom:0.4rem; filter:drop-shadow(0 4px 12px rgba(0,0,0,0.6));"
-    />
+    <div style="
+      width:120px; height:120px;
+      background-image: url('./assets/mole.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      margin-bottom:0.4rem;
+      filter:drop-shadow(0 4px 12px rgba(0,0,0,0.6));
+    "></div>
   `;
 }
 
