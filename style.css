@@ -24,9 +24,9 @@ body {
 }
 
 #cursor {
-  width: 270px;
-  height: 270px;
-  position: fixed;
+  width: 100px;
+  height: 100px;
+  /* position: fixed; */
   top: -9999px; left: -9999px;
   background-image: url('./assets/hammer.png');
   background-size: 100% 100%;
@@ -36,7 +36,7 @@ body {
   z-index: 999;
 }
 #cursor.active {
-  transform: translate(-20%, -20%) rotate(-45deg) scale(0.85);
+  transform: translate(-20%, -20%) rotate(-45deg) scale(0.4);
 }
 
 #hud {
