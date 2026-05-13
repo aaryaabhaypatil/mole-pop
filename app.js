@@ -111,7 +111,7 @@ function initHost() {
 
   const participantCursor = document.createElement('div');
   participantCursor.style.cssText = `
-    width: 80px; height: 80px;
+    width: 110px; height: 110px;
     position: fixed; top: -9999px; left: -9999px;
     background-image: url('./assets/hammer.png');
     background-size: 100% 100%;
@@ -375,7 +375,7 @@ function initParticipant() {
 
   const hostCursor = document.createElement('div');
   hostCursor.style.cssText = `
-    width: 80px; height: 80px;
+    width: 100px; height: 100px;
     position: fixed; top: -9999px; left: -9999px;
     background-image: url('./assets/hammer.png');
     background-size: 100% 100%;
