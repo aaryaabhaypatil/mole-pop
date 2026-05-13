@@ -473,7 +473,6 @@ function initParticipant() {
       setTimeout(() => buildBoard(LEVELS[state.level].holes), 50);
     }
   });
-  
 
   SquidlyAPI.firebaseOnValue('game/moleHole', holeIndex => {
     if (!currentSessionId) return;
@@ -485,19 +484,21 @@ function initParticipant() {
 
     if (holeIndex !== null && holeIndex >= 0 && holes[holeIndex]) {
       const hole = holes[holeIndex];
+      const cfg = LEVELS[state.level];
+      let localHit = false;
+
       const wrap = createMoleWrap();
       hole.appendChild(wrap);
       requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('up')));
-      SquidlyAPI.firebaseOnValue('game/moleHit', (hit) => {
-        if (hit === true && !localHit) {
+
+      // React to host hitting the mole
+      SquidlyAPI.firebaseOnValue('game/moleHitBy', (hitBy) => {
+        if (hitBy === 'host' && !localHit && hole.contains(wrap)) {
           localHit = true;
           whackMole(wrap, hole);
           playSound();
         }
       });
-
-      const cfg = LEVELS[state.level];
-      let localHit = false;
 
       wrap.addEventListener('mousedown', e => {
         if (localHit || !state.running) return;
@@ -643,7 +644,6 @@ function getLevelBreakMessage(level) {
   return messages[Math.min(level - 1, messages.length - 1)];
 }
 
-
 function cardHTML(items) {
   const rows = items.map(item => {
     let style = 'font-size:1.3rem;';
@@ -662,8 +662,6 @@ function cardHTML(items) {
     ">${rows}</div>
   `;
 }
-
-
 
 function moleImgHTML() {
   return `
