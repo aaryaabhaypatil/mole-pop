@@ -477,9 +477,17 @@ function initParticipant() {
   SquidlyAPI.firebaseOnValue('game/moleHole', holeIndex => {
     if (!currentSessionId) return;
     const holes = getHoles();
+
+    // Remove existing moles — delay removal if already whacked so animation shows
     holes.forEach(h => {
       const w = h.querySelector('.mole-wrap');
-      if (w) h.removeChild(w);
+      if (w) {
+        if (w.classList.contains('whacked')) {
+          setTimeout(() => { if (h.contains(w)) h.removeChild(w); }, 600);
+        } else {
+          h.removeChild(w);
+        }
+      }
     });
 
     if (holeIndex !== null && holeIndex >= 0 && holes[holeIndex]) {
@@ -493,8 +501,12 @@ function initParticipant() {
 
       // React to host hitting the mole
       SquidlyAPI.firebaseOnValue('game/moleHitBy', (hitBy) => {
-        if (hitBy === 'host' && !localHit && hole.contains(wrap)) {
+        if (hitBy === 'host' && !localHit) {
           localHit = true;
+          // Re-attach wrap if it was removed before we could animate
+          if (!hole.contains(wrap)) {
+            hole.appendChild(wrap);
+          }
           whackMole(wrap, hole);
           playSound();
         }
