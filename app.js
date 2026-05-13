@@ -473,6 +473,7 @@ function initParticipant() {
       setTimeout(() => buildBoard(LEVELS[state.level].holes), 50);
     }
   });
+  
 
   SquidlyAPI.firebaseOnValue('game/moleHole', holeIndex => {
     if (!currentSessionId) return;
@@ -487,6 +488,13 @@ function initParticipant() {
       const wrap = createMoleWrap();
       hole.appendChild(wrap);
       requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('up')));
+      SquidlyAPI.firebaseOnValue('game/moleHit', (hit) => {
+        if (hit === true && !localHit) {
+          localHit = true;
+          whackMole(wrap, hole);
+          playSound();
+        }
+      });
 
       const cfg = LEVELS[state.level];
       let localHit = false;
