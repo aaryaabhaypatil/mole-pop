@@ -245,7 +245,7 @@ function hostPopMole() {
       SquidlyAPI.firebaseSet('game/moleHole', -1);
       setTimeout(() => {
         if (hole.contains(wrap)) hole.removeChild(wrap);
-        if (state.running) hostPopMole();
+        if (state.running) hostSchedulePop(300);
       }, 300);
     }
   }, cfg.moleTime);
@@ -270,7 +270,7 @@ function processHit(wrap, hole, holeIndex, cfg) {
   } else {
     setTimeout(() => {
       if (hole.contains(wrap)) hole.removeChild(wrap);
-      if (state.running) hostPopMole();
+      if (state.running) hostSchedulePop(400);
     }, 1200);
   }
 }
@@ -278,7 +278,9 @@ function processHit(wrap, hole, holeIndex, cfg) {
 function hostSchedulePop(delay) {
   if (!state.running) return;
   clearTimeout(popTimeout);
-  popTimeout = setTimeout(hostPopMole, delay + Math.random() * 400);
+  // Higher levels get less breathing room, but always at least 300ms
+  const minGap = Math.max(300, 800 - state.level * 100);
+  popTimeout = setTimeout(hostPopMole, delay + Math.random() * minGap);
 }
 
 function hostLevelUp() {
@@ -503,7 +505,6 @@ function initParticipant() {
       SquidlyAPI.firebaseOnValue('game/moleHitBy', (hitBy) => {
         if (hitBy === 'host' && !localHit) {
           localHit = true;
-          // Re-attach wrap if it was removed before we could animate
           if (!hole.contains(wrap)) {
             hole.appendChild(wrap);
           }
