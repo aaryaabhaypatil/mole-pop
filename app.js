@@ -100,7 +100,7 @@ let activeMoleLock = false;
 
 let currentSessionId = null;
 
-// Participant current mole tracking
+
 let pCurrentWrap = null;
 let pCurrentHole = null;
 let pLocalHit    = false;
@@ -115,7 +115,7 @@ SquidlyAPI.addSessionInfoListener((info) => {
 });
 
 
-// ─── HOST ─────────────────────────────────────────────────────────────────────
+
 
 function initHost() {
   showStartOverlay();
@@ -156,6 +156,7 @@ function initHost() {
 
   // Single persistent listener for participant hits — registered once, never inside hostPopMole
   SquidlyAPI.firebaseOnValue('game/moleHit', (hit) => {
+    if (hit === false) { activeMoleLock = false; return; }
     if (hit !== true) return;
     if (!state.running) return;
     if (activeMoleLock) return;
