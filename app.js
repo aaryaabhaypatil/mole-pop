@@ -72,6 +72,16 @@ const LEVELS = [
 ];
 const MAX_LEVEL = LEVELS.length - 1;
 
+// Gap between moles per level (min ms, max ms).
+// Level 0 = relaxed, level 4 = snappy but not frantic.
+const LEVEL_GAPS = [
+  { min: 800,  max: 1400 },  // level 1
+  { min: 700,  max: 1200 },  // level 2
+  { min: 600,  max: 1000 },  // level 3
+  { min: 500,  max: 900  },  // level 4
+  { min: 400,  max: 800  },  // level 5 (final)
+];
+
 let state = {
   running:       false,
   score:         0,
@@ -168,7 +178,7 @@ function hostStartGame() {
   overlay.style.display = 'none';
   buildBoard(LEVELS[0].holes);
   hostStartTimer();
-  setTimeout(hostPopMole, 600);
+  setTimeout(hostPopMole, 800);
 }
 
 function hostStartTimer() {
@@ -192,7 +202,7 @@ function hostPopMole() {
   const holes     = getHoles();
   const available = holes.filter(h => !h.querySelector('.mole-wrap'));
 
-  if (available.length === 0) { hostSchedulePop(300); return; }
+  if (available.length === 0) { hostSchedulePop(); return; }
 
   const holeIndex = holes.indexOf(available[Math.floor(Math.random() * available.length)]);
   const hole      = holes[holeIndex];
@@ -241,11 +251,12 @@ function hostPopMole() {
 
   const t = setTimeout(() => {
     if (!holeHitLock[holeIndex] && hole.contains(wrap)) {
+      holeHitLock[holeIndex] = true;
       wrap.classList.remove('up');
       SquidlyAPI.firebaseSet('game/moleHole', -1);
       setTimeout(() => {
         if (hole.contains(wrap)) hole.removeChild(wrap);
-        if (state.running) hostSchedulePop(300);
+        if (state.running) hostSchedulePop();
       }, 300);
     }
   }, cfg.moleTime);
@@ -270,17 +281,17 @@ function processHit(wrap, hole, holeIndex, cfg) {
   } else {
     setTimeout(() => {
       if (hole.contains(wrap)) hole.removeChild(wrap);
-      if (state.running) hostSchedulePop(400);
+      if (state.running) hostSchedulePop();
     }, 1200);
   }
 }
 
-function hostSchedulePop(delay) {
+function hostSchedulePop() {
   if (!state.running) return;
   clearTimeout(popTimeout);
-  // Higher levels get less breathing room, but always at least 300ms
-  const minGap = Math.max(300, 800 - state.level * 100);
-  popTimeout = setTimeout(hostPopMole, delay + Math.random() * minGap);
+  const gap = LEVEL_GAPS[state.level] || LEVEL_GAPS[LEVEL_GAPS.length - 1];
+  const delay = gap.min + Math.random() * (gap.max - gap.min);
+  popTimeout = setTimeout(hostPopMole, delay);
 }
 
 function hostLevelUp() {
@@ -348,7 +359,7 @@ function startNextLevel() {
 
   overlay.style.display = 'none';
   buildBoard(LEVELS[state.level].holes);
-  setTimeout(hostPopMole, 600);
+  setTimeout(hostPopMole, 800);
 }
 
 function hostEndGame() {
