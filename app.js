@@ -6,7 +6,7 @@ if (typeof SquidlyAPI === 'undefined') {
     addSessionInfoListener: (cb) => cb({ user: 'host-mouse', participantActive: false }),
     firebaseSet: (path, value) => {
       _db[path] = value;
-      if (_listeners[path]) _listeners[path].forEach(fn => fn(value));
+      if (_listeners[path]) _listeners[path].forEach(fn => setTimeout(() => fn(value), 0));
     },
     firebaseOnValue: (path, cb) => {
       if (!_listeners[path]) _listeners[path] = [];
