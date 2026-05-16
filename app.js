@@ -117,24 +117,33 @@ let pCurrentToken = null; // token of the mole currently shown on participant sc
 // We watch the whole document for any access-button that appears outside #board
 // and isn't already assigned to a holes row, then put it in the controls group.
 (function watchControlButtons() {
-  // The real Squidly platform uses these group names for toolbar/exit buttons
   const CONTROL_GROUPS = new Set(['apps', 'default']);
 
-  function assignControlGroup(node) {
-    if (node.nodeType !== 1) return;
-    const tags = node.tagName === 'ACCESS-BUTTON'
-      ? [node]
-      : [...node.querySelectorAll('access-button')];
-    tags.forEach(el => {
-      const grp = el.getAttribute('access-group') || '';
-      if (CONTROL_GROUPS.has(grp)) {
-        el.setAttribute('access-group', 'controls');
-      }
-    });
+  function reassign(el) {
+    const grp = el.getAttribute('access-group') || '';
+    if (CONTROL_GROUPS.has(grp)) {
+      el.setAttribute('access-group', 'controls');
+    }
   }
 
+  function scanAll() {
+    document.querySelectorAll('access-button').forEach(reassign);
+  }
+
+  // Sweep anything already in the DOM right now
+  scanAll();
+
+  // Also sweep after a short delay in case platform renders just after us
+  setTimeout(scanAll, 500);
+  setTimeout(scanAll, 1500);
+
+  // Watch for anything added later (e.g. Next Level / Play Again buttons)
   const observer = new MutationObserver(mutations => {
-    mutations.forEach(m => m.addedNodes.forEach(assignControlGroup));
+    mutations.forEach(m => m.addedNodes.forEach(node => {
+      if (node.nodeType !== 1) return;
+      if (node.tagName === 'ACCESS-BUTTON') reassign(node);
+      else node.querySelectorAll && node.querySelectorAll('access-button').forEach(reassign);
+    }));
   });
   observer.observe(document.documentElement, { childList: true, subtree: true });
 })();
