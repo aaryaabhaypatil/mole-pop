@@ -117,6 +117,9 @@ let pCurrentToken = null; // token of the mole currently shown on participant sc
 // We watch the whole document for any access-button that appears outside #board
 // and isn't already assigned to a holes row, then put it in the controls group.
 (function watchControlButtons() {
+  // The real Squidly platform uses these group names for toolbar/exit buttons
+  const CONTROL_GROUPS = new Set(['apps', 'default']);
+
   function assignControlGroup(node) {
     if (node.nodeType !== 1) return;
     const tags = node.tagName === 'ACCESS-BUTTON'
@@ -124,7 +127,7 @@ let pCurrentToken = null; // token of the mole currently shown on participant sc
       : [...node.querySelectorAll('access-button')];
     tags.forEach(el => {
       const grp = el.getAttribute('access-group') || '';
-      if (!grp.startsWith('holes-row-') && grp !== 'controls') {
+      if (CONTROL_GROUPS.has(grp)) {
         el.setAttribute('access-group', 'controls');
       }
     });
