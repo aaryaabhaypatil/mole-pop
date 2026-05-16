@@ -29,7 +29,6 @@ if (typeof SquidlyAPI === 'undefined') {
         document.body.appendChild(toolbar);
       }
       const btn = document.createElement('button');
-      btn.dataset.iconKey = key;
       btn.textContent = opts.displayValue;
       btn.style.cssText = `
         padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer;
@@ -38,12 +37,20 @@ if (typeof SquidlyAPI === 'undefined') {
         color: #fff;
       `;
       btn.addEventListener('click', cb);
-      toolbar.appendChild(btn);
+
+      const wrapper = document.createElement('access-button');
+      wrapper.dataset.iconKey = key;
+      wrapper.setAttribute('access-group', 'controls');
+      wrapper.setAttribute('access-order', String(toolbar.children.length + 1));
+      wrapper.appendChild(btn);
+
+      wrapper.addEventListener('access-click', (e) => { e.stopPropagation(); cb(); });
+      toolbar.appendChild(wrapper);
       return key;
     },
     removeIcon: (key) => {
-      const btn = document.querySelector(`[data-icon-key="${key}"]`);
-      if (btn) btn.remove();
+      const wrapper = document.querySelector(`[data-icon-key="${key}"]`);
+      if (wrapper) wrapper.remove();
     },
     setGridSize: () => {},
     setSettings: () => {},
@@ -628,9 +635,11 @@ function buildBoard(numHoles) {
     hole.style.width  = size + 'px';
     hole.style.height = size + 'px';
 
+    const row = Math.floor(i / cols);
+
     const wrapper = document.createElement('access-button');
-    wrapper.setAttribute('access-group', 'holes');
-    wrapper.setAttribute('access-order', String(i + 1));
+    wrapper.setAttribute('access-group', 'holes-row-' + row);
+    wrapper.setAttribute('access-order', String((i % cols) + 1));
     wrapper.appendChild(hole);
 
     board.appendChild(wrapper);
