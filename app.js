@@ -112,6 +112,30 @@ let pCurrentHole  = null;
 let pLocalHit     = false;
 let pCurrentToken = null; // token of the mole currently shown on participant screen
 
+// ── Switch access: keep toolbar buttons in the 'controls' group ──────────────
+// The real Squidly platform creates access-button elements for setIcon calls.
+// We watch the whole document for any access-button that appears outside #board
+// and isn't already assigned to a holes row, then put it in the controls group.
+(function watchControlButtons() {
+  function assignControlGroup(node) {
+    if (node.nodeType !== 1) return;
+    const tags = node.tagName === 'ACCESS-BUTTON'
+      ? [node]
+      : [...node.querySelectorAll('access-button')];
+    tags.forEach(el => {
+      const grp = el.getAttribute('access-group') || '';
+      if (!grp.startsWith('holes-row-') && grp !== 'controls') {
+        el.setAttribute('access-group', 'controls');
+      }
+    });
+  }
+
+  const observer = new MutationObserver(mutations => {
+    mutations.forEach(m => m.addedNodes.forEach(assignControlGroup));
+  });
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+})();
+
 SquidlyAPI.addSessionInfoListener((info) => {
   isHost = info.user && info.user.startsWith('host');
   if (isHost) initHost();
