@@ -11,8 +11,8 @@ if (typeof SquidlyAPI === 'undefined') {
     firebaseOnValue: (path, cb) => {
       if (!_listeners[path]) _listeners[path] = [];
       _listeners[path].push(cb);
-      // Only replay if value is non-null so stale mole data never auto-fires
-      if (_db[path] !== undefined && _db[path] !== null) cb(_db[path]);
+      // Always replay stored value so participant gets current state on load
+      if (_db[path] !== undefined) setTimeout(() => cb(_db[path]), 0);
     },
     addCursorListener: () => {},
     setIcon: (x, y, opts, cb) => {
@@ -107,6 +107,8 @@ let pCurrentWrap  = null;
 let pCurrentHole  = null;
 let pLocalHit     = false;
 let pCurrentToken = null;
+// Tracks the last mole object shown on participant so we don't double-spawn
+let pLastMoleToken = null;
 
 // ── Switch access ────────────────────────────────────────────────────────────
 (function watchControlButtons() {
@@ -200,6 +202,7 @@ function hostStartGame() {
   state = { running: true, score: 0, level: 0, hitsThisLevel: 0, timeLeft: LEVELS[0].timeLimit };
   activeMoleToken = null;
 
+  // Clear mole FIRST before anything else so participant listener sees null
   SquidlyAPI.firebaseSet('game/mole',                null);
   SquidlyAPI.firebaseSet('game/moleHitBy',           null);
   SquidlyAPI.firebaseSet('game/participantHitToken', null);
@@ -425,10 +428,8 @@ function initParticipant() {
   SquidlyAPI.firebaseOnValue('game/sessionId', (sessionId) => {
     if (!sessionId) return;
     currentSessionId = sessionId;
-    pCurrentWrap  = null;
-    pCurrentHole  = null;
-    pLocalHit     = false;
-    pCurrentToken = null;
+    pLastMoleToken = null;
+    clearParticipantMole();
     state = { running: true, score: 0, level: 0, hitsThisLevel: 0, timeLeft: 0 };
     overlay.style.display   = 'none';
     levelEl.textContent     = 'Level 1';
@@ -495,14 +496,18 @@ function initParticipant() {
     }
   });
 
-  // Single listener for mole — fires once per pop with { token, holeIndex } or null
   SquidlyAPI.firebaseOnValue('game/mole', (mole) => {
     if (!currentSessionId) return;
 
-    // Clear any existing mole
+    // Always clear whatever is currently on the board
     clearParticipantMole();
 
+    // null = mole was cleared, nothing to spawn
     if (!mole) return;
+
+    // Deduplicate: don't spawn the same mole token twice
+    if (mole.token === pLastMoleToken) return;
+    pLastMoleToken = mole.token;
 
     const { token, holeIndex } = mole;
     const holes = getHoles();
@@ -570,8 +575,7 @@ function clearParticipantMole() {
   const holes = getHoles();
   holes.forEach(h => {
     const w = h.querySelector('.mole-wrap');
-    if (!w) return;
-    if (h.contains(w)) h.removeChild(w);
+    if (w && h.contains(w)) h.removeChild(w);
   });
   pCurrentWrap  = null;
   pCurrentHole  = null;
