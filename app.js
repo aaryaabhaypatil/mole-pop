@@ -368,13 +368,11 @@ function showLevelBreakOverlay() {
       { label: msg.tip },
       { label: 'Score so far: <strong style="color:#ffd700;">' + state.score + '</strong>', muted: true },
     ])}
-    <button class="btn gold" id="next-level-btn" style="margin-top:1rem;font-size:1.3rem;padding:0.7rem 2.5rem;">Next Level</button>
+    
   `;
   overlay.style.display = 'flex';
 
-  document.getElementById('next-level-btn').addEventListener('click', () => {
-    startNextLevel();
-  });
+  overlay.appendChild(makeAccessButton('Next Level', 'controls', 1, () => startNextLevel()));
 }
 
 function startNextLevel() {
@@ -766,10 +764,9 @@ function showStartOverlay() {
       { label: '&nbsp;Beat the clock before time runs out!' },
       { label: '&nbsp;More holes appear as you progress' },
     ])}
-    <button class="btn gold" id="start-game-btn" style="margin-top:1rem;font-size:1.3rem;padding:0.7rem 2.5rem;">Start Game</button>
   `;
+  overlay.appendChild(makeAccessButton('Start Game', 'controls', 1, () => hostStartGame()));
   overlay.style.display = 'flex';
-  document.getElementById('start-game-btn').addEventListener('click', () => hostStartGame());
 }
 
 function showWaitingOverlay() {
@@ -807,15 +804,10 @@ function showEndOverlay(canRestart) {
   overlay.style.display = 'flex';
 
   if (canRestart) {
-    const btn = document.createElement('button');
-    btn.className = 'btn gold';
-    btn.textContent = 'Play Again';
-    btn.style.cssText = 'margin-top:1rem;font-size:1.3rem;padding:0.7rem 2.5rem;';
-    btn.addEventListener('click', () => {
+    overlay.appendChild(makeAccessButton('Play Again', 'controls', 1, () => {
       SquidlyAPI.firebaseSet('game/gameOver', false);
       hostStartGame();
-    });
-    overlay.appendChild(btn);
+    }));
   }
 }
 
