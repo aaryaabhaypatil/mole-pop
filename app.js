@@ -372,15 +372,11 @@ function showLevelBreakOverlay() {
       { label: msg.tip },
       { label: 'Score so far: <strong style="color:#ffd700;">' + state.score + '</strong>', muted: true },
     ])}
+    <button class="btn gold" id="next-level-btn" style="margin-top:1rem;font-size:1.3rem;padding:0.7rem 2.5rem;">Next Level</button>
   `;
   overlay.style.display = 'flex';
 
-  if (restartIconKey) SquidlyAPI.removeIcon(restartIconKey);
-  restartIconKey = SquidlyAPI.setIcon(1, 0, {
-    symbol: 'add', displayValue: 'Next Level', type: 'lightGreen',
-  }, () => {
-    SquidlyAPI.removeIcon(restartIconKey);
-    restartIconKey = null;
+  document.getElementById('next-level-btn').addEventListener('click', () => {
     startNextLevel();
   });
 }
@@ -813,18 +809,15 @@ function showEndOverlay(canRestart) {
   overlay.style.display = 'flex';
 
   if (canRestart) {
-    restartIconKey = SquidlyAPI.setIcon(1, 0, {
-      symbol:       'add',
-      displayValue: 'Play Again',
-      type:         'lightGreen',
-    }, () => {
+    const btn = document.createElement('button');
+    btn.className = 'btn gold';
+    btn.textContent = 'Play Again';
+    btn.style.cssText = 'margin-top:1rem;font-size:1.3rem;padding:0.7rem 2.5rem;';
+    btn.addEventListener('click', () => {
       SquidlyAPI.firebaseSet('game/gameOver', false);
-      if (restartIconKey) {
-        SquidlyAPI.removeIcon(restartIconKey);
-        restartIconKey = null;
-      }
       hostStartGame();
     });
+    overlay.appendChild(btn);
   }
 }
 
