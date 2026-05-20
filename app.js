@@ -500,6 +500,7 @@ function initParticipant() {
   // Single listener on 'game/mole' — replaces separate moleToken + moleHole listeners
   SquidlyAPI.firebaseOnValue('game/mole', (mole) => {
     if (!currentSessionId) return;
+    if (!state.running) return;
 
     // Clear any existing mole from the board
     const holes = getHoles();
@@ -652,7 +653,6 @@ function whackMole(wrap, hole) {
   wrap.classList.add('whacked');
   hole.classList.add('whacked');
   setTimeout(() => hole.classList.remove('whacked'), 200);
-  setTimeout(() => { if (hole.contains(wrap)) hole.removeChild(wrap); }, 400);
 }
 
 function playSound() {
