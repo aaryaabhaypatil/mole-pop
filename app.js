@@ -188,7 +188,11 @@ function initHost() {
     }
   });
 
-  startIconKey = null;
+  startIconKey = SquidlyAPI.setIcon(1, 0, {
+    symbol:       'add',
+    displayValue: 'Start Game',
+    type:         'lightGreen',
+  }, () => hostStartGame());
 
   // Participant hit — listens for a token written by the participant.
   // Only acts if the token matches the currently active mole.
