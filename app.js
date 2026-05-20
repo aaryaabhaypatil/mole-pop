@@ -287,6 +287,17 @@ function hostPopMole() {
     };
     wrapper.addEventListener('access-click', accessHandler);
   }
+
+  // Auto-hide if not hit in time
+  const hideTimer = setTimeout(() => {
+    if (activeMoleToken !== token) return; // already hit
+    activeMoleToken = null;
+    SquidlyAPI.firebaseSet('game/moleToken', null);
+    SquidlyAPI.firebaseSet('game/moleHole',  -1);
+    if (hole.contains(wrap)) hole.removeChild(wrap);
+    hostSchedulePop();
+  }, cfg.moleTime);
+  moleTimers.push(hideTimer);
 }
 
 function processHit(wrap, hole, cfg) {
