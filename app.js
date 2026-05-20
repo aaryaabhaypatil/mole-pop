@@ -372,11 +372,12 @@ function showLevelBreakOverlay() {
       { label: msg.tip },
       { label: 'Score so far: <strong style="color:#ffd700;">' + state.score + '</strong>', muted: true },
     ])}
-    
   `;
   overlay.style.display = 'flex';
 
-  overlay.appendChild(makeAccessButton('Next Level', 'controls', 1, () => startNextLevel()));
+  document.getElementById('next-level-btn').addEventListener('click', () => {
+    startNextLevel();
+  });
 }
 
 function startNextLevel() {
@@ -808,10 +809,19 @@ function showEndOverlay(canRestart) {
   overlay.style.display = 'flex';
 
   if (canRestart) {
-    overlay.appendChild(makeAccessButton('Play Again', 'controls', 1, () => {
+    const btn = document.createElement('button');
+    btn.className = 'btn gold';
+    btn.textContent = 'Play Again';
+    btn.style.cssText = 'margin-top:1rem;font-size:1.3rem;padding:0.7rem 2.5rem;';
+    btn.addEventListener('click', () => {
       SquidlyAPI.firebaseSet('game/gameOver', false);
+      if (restartIconKey) {
+        SquidlyAPI.removeIcon(restartIconKey);
+        restartIconKey = null;
+      }
       hostStartGame();
-    }));
+    });
+    overlay.appendChild(btn);
   }
 }
 
