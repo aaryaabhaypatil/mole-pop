@@ -303,9 +303,23 @@ function hostPopMole() {
       onHostHit(null);
     };
     wrapper.addEventListener('access-click', accessHandler);
+    setTimeout(() => wrapper.removeEventListener('access-click', accessHandler), cfg.moleTime + 400);
   }
 
-  // Moles stay up until hit — no auto-hide timeout
+  // Auto-hide if not hit in time
+  const t = setTimeout(() => {
+    if (activeMoleToken !== token) return; // already hit
+    activeMoleToken = null;
+    if (hole.contains(wrap)) {
+      wrap.classList.remove('up');
+      SquidlyAPI.firebaseSet('game/moleHole', -1);
+      setTimeout(() => {
+        if (hole.contains(wrap)) hole.removeChild(wrap);
+        if (state.running) hostSchedulePop();
+      }, 300);
+    }
+  }, cfg.moleTime);
+  moleTimers.push(t);
 }
 
 function processHit(wrap, hole, cfg) {
@@ -593,6 +607,7 @@ function initParticipant() {
         onParticipantHit(null);
       };
       wrapper.addEventListener('access-click', accessHandler);
+      setTimeout(() => wrapper.removeEventListener('access-click', accessHandler), cfg.moleTime + 400);
     }
   });
 
