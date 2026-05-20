@@ -11,7 +11,8 @@ if (typeof SquidlyAPI === 'undefined') {
     firebaseOnValue: (path, cb) => {
       if (!_listeners[path]) _listeners[path] = [];
       _listeners[path].push(cb);
-      if (_db[path] !== undefined) cb(_db[path]);
+      // Only replay if value is non-null so stale mole data never auto-fires
+      if (_db[path] !== undefined && _db[path] !== null) cb(_db[path]);
     },
     addCursorListener: () => {},
     setIcon: (x, y, opts, cb) => {
@@ -99,11 +100,9 @@ let isHost           = false;
 let startIconKey     = null;
 let restartIconKey   = null;
 let currentSessionId = null;
+let activeMoleToken  = null;
 
-// ── Host mole state ──────────────────────────────────────────────────────────
-let activeMoleToken = null;
-
-// ── Participant mole state ───────────────────────────────────────────────────
+// Participant state
 let pCurrentWrap  = null;
 let pCurrentHole  = null;
 let pLocalHit     = false;
@@ -172,7 +171,6 @@ function initHost() {
 
   startIconKey = null;
 
-  // Participant hit — token written by participant, must match active mole
   SquidlyAPI.firebaseOnValue('game/participantHitToken', (token) => {
     if (!token) return;
     if (!state.running) return;
@@ -193,22 +191,25 @@ function hostStartGame() {
   if (startIconKey)   { SquidlyAPI.removeIcon(startIconKey);   startIconKey   = null; }
   if (restartIconKey) { SquidlyAPI.removeIcon(restartIconKey); restartIconKey = null; }
 
+  clearTimeout(popTimeout);
+  moleTimers.forEach(clearTimeout);
+  moleTimers = [];
+  clearInterval(timerId);
+
   const sessionId = Date.now().toString();
   state = { running: true, score: 0, level: 0, hitsThisLevel: 0, timeLeft: LEVELS[0].timeLimit };
   activeMoleToken = null;
 
-  // Write a single 'mole' object instead of separate moleToken + moleHole
-  SquidlyAPI.firebaseSet('game/gameOver',            false);
-  SquidlyAPI.firebaseSet('game/levelBreak',          false);
   SquidlyAPI.firebaseSet('game/mole',                null);
   SquidlyAPI.firebaseSet('game/moleHitBy',           null);
   SquidlyAPI.firebaseSet('game/participantHitToken', null);
+  SquidlyAPI.firebaseSet('game/gameOver',            false);
+  SquidlyAPI.firebaseSet('game/levelBreak',          false);
   SquidlyAPI.firebaseSet('game/score',               0);
   SquidlyAPI.firebaseSet('game/level',               0);
   SquidlyAPI.firebaseSet('game/hitsThisLevel',       0);
   SquidlyAPI.firebaseSet('game/timeLeft',            state.timeLeft);
   SquidlyAPI.firebaseSet('game/running',             true);
-  SquidlyAPI.firebaseSet('game/sessionId',           null);
   SquidlyAPI.firebaseSet('game/sessionId',           sessionId);
 
   updateHUD();
@@ -245,10 +246,9 @@ function hostPopMole() {
   const token     = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   activeMoleToken = token;
 
-  // Single atomic write — participant reacts to this one value only
-  SquidlyAPI.firebaseSet('game/mole', { token, holeIndex });
   SquidlyAPI.firebaseSet('game/moleHitBy',           null);
   SquidlyAPI.firebaseSet('game/participantHitToken', null);
+  SquidlyAPI.firebaseSet('game/mole',                { token, holeIndex });
 
   const wrap = createMoleWrap();
   hole.appendChild(wrap);
@@ -281,7 +281,6 @@ function hostPopMole() {
     if (activeMoleToken !== token) return;
     activeMoleToken = null;
     SquidlyAPI.firebaseSet('game/mole', null);
-    // Remove from host board immediately
     if (hole.contains(wrap)) hole.removeChild(wrap);
     hostSchedulePop();
   }, cfg.moleTime);
@@ -298,7 +297,6 @@ function processHit(wrap, hole, cfg) {
   SquidlyAPI.firebaseSet('game/hitsThisLevel', state.hitsThisLevel);
   SquidlyAPI.firebaseSet('game/mole',          null);
 
-  // Remove from host board immediately so next pop can use this hole
   if (hole.contains(wrap)) hole.removeChild(wrap);
   whackMole(wrap, hole);
   playSound();
@@ -497,36 +495,20 @@ function initParticipant() {
     }
   });
 
-  // Single listener on 'game/mole' — replaces separate moleToken + moleHole listeners
+  // Single listener for mole — fires once per pop with { token, holeIndex } or null
   SquidlyAPI.firebaseOnValue('game/mole', (mole) => {
     if (!currentSessionId) return;
-    if (!state.running) return;
 
-    // Clear any existing mole from the board
-    const holes = getHoles();
-    holes.forEach(h => {
-      const w = h.querySelector('.mole-wrap');
-      if (!w) return;
-      if (w.classList.contains('whacked')) {
-        setTimeout(() => { if (h.contains(w)) h.removeChild(w); }, 400);
-      } else {
-        h.removeChild(w);
-      }
-    });
+    // Clear any existing mole
+    clearParticipantMole();
 
-    pCurrentWrap  = null;
-    pCurrentHole  = null;
-    pLocalHit     = false;
-    pCurrentToken = null;
-
-    // null means mole cleared, nothing more to do
     if (!mole) return;
 
     const { token, holeIndex } = mole;
+    const holes = getHoles();
     if (!holes[holeIndex]) return;
 
     pCurrentToken = token;
-
     const hole = holes[holeIndex];
     const wrap = createMoleWrap();
 
@@ -562,7 +544,6 @@ function initParticipant() {
     }
   });
 
-  // Host hit the mole — show whack animation on participant side
   SquidlyAPI.firebaseOnValue('game/moleHitBy', (hitBy) => {
     if (!currentSessionId) return;
     if (hitBy !== 'host') return;
@@ -583,6 +564,19 @@ function initParticipant() {
       showEndOverlay(false);
     }
   });
+}
+
+function clearParticipantMole() {
+  const holes = getHoles();
+  holes.forEach(h => {
+    const w = h.querySelector('.mole-wrap');
+    if (!w) return;
+    if (h.contains(w)) h.removeChild(w);
+  });
+  pCurrentWrap  = null;
+  pCurrentHole  = null;
+  pLocalHit     = false;
+  pCurrentToken = null;
 }
 
 
@@ -653,6 +647,7 @@ function whackMole(wrap, hole) {
   wrap.classList.add('whacked');
   hole.classList.add('whacked');
   setTimeout(() => hole.classList.remove('whacked'), 200);
+  setTimeout(() => { if (hole.contains(wrap)) hole.removeChild(wrap); }, 400);
 }
 
 function playSound() {
