@@ -188,11 +188,7 @@ function initHost() {
     }
   });
 
-  startIconKey = SquidlyAPI.setIcon(1, 0, {
-    symbol:       'add',
-    displayValue: 'Start Game',
-    type:         'lightGreen',
-  }, () => hostStartGame());
+  startIconKey = null;
 
   // Participant hit — listens for a token written by the participant.
   // Only acts if the token matches the currently active mole.
@@ -770,8 +766,10 @@ function showStartOverlay() {
       { label: '&nbsp;Beat the clock before time runs out!' },
       { label: '&nbsp;More holes appear as you progress' },
     ])}
+    <button class="btn gold" id="start-game-btn" style="margin-top:1rem;font-size:1.3rem;padding:0.7rem 2.5rem;">Start Game</button>
   `;
   overlay.style.display = 'flex';
+  document.getElementById('start-game-btn').addEventListener('click', () => hostStartGame());
 }
 
 function showWaitingOverlay() {
