@@ -94,28 +94,24 @@ let state = {
   hitsThisLevel: 0,
   timeLeft:      0,
 };
-let timerId        = null;
-let moleTimers     = [];
-let popTimeout     = null;
-let isHost         = false;
-let startIconKey   = null;
-let restartIconKey = null;
+let timerId          = null;
+let moleTimers       = [];
+let popTimeout       = null;
+let isHost           = false;
+let startIconKey     = null;
+let restartIconKey   = null;
 let currentSessionId = null;
 
 // ── Host mole state ──────────────────────────────────────────────────────────
-// Each mole pop gets a unique token. A hit is only valid if the token matches.
 let activeMoleToken = null;
 
 // ── Participant mole state ───────────────────────────────────────────────────
 let pCurrentWrap  = null;
 let pCurrentHole  = null;
 let pLocalHit     = false;
-let pCurrentToken = null; // token of the mole currently shown on participant screen
+let pCurrentToken = null;
 
 // ── Switch access: keep toolbar buttons in the 'controls' group ──────────────
-// The real Squidly platform creates access-button elements for setIcon calls.
-// We watch the whole document for any access-button that appears outside #board
-// and isn't already assigned to a holes row, then put it in the controls group.
 (function watchControlButtons() {
   const CONTROL_GROUPS = new Set(['apps', 'default']);
 
@@ -130,14 +126,10 @@ let pCurrentToken = null; // token of the mole currently shown on participant sc
     document.querySelectorAll('access-button').forEach(reassign);
   }
 
-  // Sweep anything already in the DOM right now
   scanAll();
-
-  // Also sweep after a short delay in case platform renders just after us
   setTimeout(scanAll, 500);
   setTimeout(scanAll, 1500);
 
-  // Watch for anything added later (e.g. Next Level / Play Again buttons)
   const observer = new MutationObserver(mutations => {
     mutations.forEach(m => m.addedNodes.forEach(node => {
       if (node.nodeType !== 1) return;
@@ -188,25 +180,18 @@ function initHost() {
     }
   });
 
-  startIconKey = SquidlyAPI.setIcon(1, 0, {
-    symbol:       'add',
-    displayValue: 'Start Game',
-    type:         'lightGreen',
-  }, () => hostStartGame());
+  startIconKey = null;
 
-  // Participant hit — listens for a token written by the participant.
-  // Only acts if the token matches the currently active mole.
   SquidlyAPI.firebaseOnValue('game/participantHitToken', (token) => {
     if (!token) return;
     if (!state.running) return;
-    if (token !== activeMoleToken) return; // wrong mole or stale
+    if (token !== activeMoleToken) return;
 
-    // Find the mole on the board and process the hit
     const holes = getHoles();
     for (let i = 0; i < holes.length; i++) {
       const wrap = holes[i].querySelector('.mole-wrap');
       if (wrap && !wrap.classList.contains('whacked')) {
-        activeMoleToken = null; // consume token immediately
+        activeMoleToken = null;
         processHit(wrap, holes[i], LEVELS[state.level]);
         return;
       }
@@ -223,19 +208,19 @@ function hostStartGame() {
   state = { running: true, score: 0, level: 0, hitsThisLevel: 0, timeLeft: LEVELS[0].timeLimit };
   activeMoleToken = null;
 
-  SquidlyAPI.firebaseSet('game/gameOver',           false);
-  SquidlyAPI.firebaseSet('game/levelBreak',         false);
-  SquidlyAPI.firebaseSet('game/moleHole',           -1);
-  SquidlyAPI.firebaseSet('game/moleToken',          null);
-  SquidlyAPI.firebaseSet('game/moleHitBy',          null);
-  SquidlyAPI.firebaseSet('game/participantHitToken',null);
-  SquidlyAPI.firebaseSet('game/score',              0);
-  SquidlyAPI.firebaseSet('game/level',              0);
-  SquidlyAPI.firebaseSet('game/hitsThisLevel',      0);
-  SquidlyAPI.firebaseSet('game/timeLeft',           state.timeLeft);
-  SquidlyAPI.firebaseSet('game/running',            true);
-  SquidlyAPI.firebaseSet('game/sessionId',          null);
-  SquidlyAPI.firebaseSet('game/sessionId',          sessionId);
+  SquidlyAPI.firebaseSet('game/gameOver',            false);
+  SquidlyAPI.firebaseSet('game/levelBreak',          false);
+  SquidlyAPI.firebaseSet('game/moleHole',            -1);
+  SquidlyAPI.firebaseSet('game/moleToken',           null);
+  SquidlyAPI.firebaseSet('game/moleHitBy',           null);
+  SquidlyAPI.firebaseSet('game/participantHitToken', null);
+  SquidlyAPI.firebaseSet('game/score',               0);
+  SquidlyAPI.firebaseSet('game/level',               0);
+  SquidlyAPI.firebaseSet('game/hitsThisLevel',       0);
+  SquidlyAPI.firebaseSet('game/timeLeft',            state.timeLeft);
+  SquidlyAPI.firebaseSet('game/running',             true);
+  SquidlyAPI.firebaseSet('game/sessionId',           null);
+  SquidlyAPI.firebaseSet('game/sessionId',           sessionId);
 
   updateHUD();
   overlay.style.display = 'none';
@@ -269,23 +254,21 @@ function hostPopMole() {
   const hole      = available[Math.floor(Math.random() * available.length)];
   const holeIndex = holes.indexOf(hole);
 
-  // Unique token for this mole — written to Firebase so participant can read it
   const token     = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   activeMoleToken = token;
 
-  SquidlyAPI.firebaseSet('game/moleToken',          token);
-  SquidlyAPI.firebaseSet('game/moleHole',           holeIndex);
-  SquidlyAPI.firebaseSet('game/moleHitBy',          null);
-  SquidlyAPI.firebaseSet('game/participantHitToken',null);
+  SquidlyAPI.firebaseSet('game/moleToken',           token);
+  SquidlyAPI.firebaseSet('game/moleHole',            holeIndex);
+  SquidlyAPI.firebaseSet('game/moleHitBy',           null);
+  SquidlyAPI.firebaseSet('game/participantHitToken', null);
 
   const wrap = createMoleWrap();
   hole.appendChild(wrap);
   requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('up')));
 
-  // Host clicks — process hit directly, no Firebase roundtrip needed
   const onHostHit = (e) => {
     if (e) e.stopPropagation();
-    if (activeMoleToken !== token) return; // already consumed
+    if (activeMoleToken !== token) return;
     activeMoleToken = null;
     cursorEl.classList.add('active');
     SquidlyAPI.firebaseSet('game/moleHitBy', 'host');
@@ -303,23 +286,7 @@ function hostPopMole() {
       onHostHit(null);
     };
     wrapper.addEventListener('access-click', accessHandler);
-    setTimeout(() => wrapper.removeEventListener('access-click', accessHandler), cfg.moleTime + 400);
   }
-
-  // Auto-hide if not hit in time
-  const t = setTimeout(() => {
-    if (activeMoleToken !== token) return; // already hit
-    activeMoleToken = null;
-    if (hole.contains(wrap)) {
-      wrap.classList.remove('up');
-      SquidlyAPI.firebaseSet('game/moleHole', -1);
-      setTimeout(() => {
-        if (hole.contains(wrap)) hole.removeChild(wrap);
-        if (state.running) hostSchedulePop();
-      }, 300);
-    }
-  }, cfg.moleTime);
-  moleTimers.push(t);
 }
 
 function processHit(wrap, hole, cfg) {
@@ -339,9 +306,8 @@ function processHit(wrap, hole, cfg) {
     setTimeout(hostLevelUp, 200);
   } else {
     setTimeout(() => {
-      if (hole.contains(wrap)) hole.removeChild(wrap);
       if (state.running) hostSchedulePop();
-    }, 1200);
+    }, 600);
   }
 }
 
@@ -388,10 +354,7 @@ function showLevelBreakOverlay() {
     ])}
   `;
   overlay.style.display = 'flex';
-
-  document.getElementById('next-level-btn').addEventListener('click', () => {
-    startNextLevel();
-  });
+  overlay.appendChild(makeAccessButton('Next Level', 'controls', 1, () => startNextLevel()));
 }
 
 function startNextLevel() {
@@ -460,8 +423,6 @@ function initParticipant() {
   });
 
   showWaitingOverlay();
-
-  // All listeners registered exactly once here
 
   SquidlyAPI.firebaseOnValue('game/sessionId', (sessionId) => {
     if (!sessionId) return;
@@ -536,11 +497,9 @@ function initParticipant() {
     }
   });
 
-  // Mole token changes → new mole or mole cleared
   SquidlyAPI.firebaseOnValue('game/moleToken', (token) => {
     if (!currentSessionId) return;
 
-    // Clear any existing mole from the board
     const holes = getHoles();
     holes.forEach(h => {
       const w = h.querySelector('.mole-wrap');
@@ -556,24 +515,19 @@ function initParticipant() {
     pCurrentHole  = null;
     pLocalHit     = false;
     pCurrentToken = token;
-
-    // token null means mole was cleared, nothing more to do
   });
 
-  // Mole hole index — show the mole in the right hole
   SquidlyAPI.firebaseOnValue('game/moleHole', (holeIndex) => {
     if (!currentSessionId) return;
     if (holeIndex === null || holeIndex < 0) return;
-    if (!pCurrentToken) return; // no active token, ignore
+    if (!pCurrentToken) return;
 
     const holes = getHoles();
     if (!holes[holeIndex]) return;
 
-    // Don't spawn a second mole if one is already showing for this token
     if (pCurrentWrap) return;
 
     const hole = holes[holeIndex];
-    const cfg  = LEVELS[state.level];
     const wrap = createMoleWrap();
 
     pCurrentWrap = wrap;
@@ -582,16 +536,14 @@ function initParticipant() {
     hole.appendChild(wrap);
     requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('up')));
 
-    // Participant hits the mole
     const onParticipantHit = (e) => {
       if (e) e.stopPropagation();
       if (pLocalHit || !state.running) return;
-      if (pCurrentWrap !== wrap) return; // stale
+      if (pCurrentWrap !== wrap) return;
       pLocalHit = true;
       cursorEl.classList.add('active');
       whackMole(wrap, hole);
       playSound();
-      // Send the token so host knows which mole was hit
       SquidlyAPI.firebaseSet('game/participantHitToken', pCurrentToken);
       SquidlyAPI.firebaseSet('game/moleHitBy',           'participant');
     };
@@ -607,11 +559,9 @@ function initParticipant() {
         onParticipantHit(null);
       };
       wrapper.addEventListener('access-click', accessHandler);
-      setTimeout(() => wrapper.removeEventListener('access-click', accessHandler), cfg.moleTime + 400);
     }
   });
 
-  // Host hit the mole — show whack animation on participant side
   SquidlyAPI.firebaseOnValue('game/moleHitBy', (hitBy) => {
     if (!currentSessionId) return;
     if (hitBy !== 'host') return;
@@ -702,6 +652,7 @@ function whackMole(wrap, hole) {
   wrap.classList.add('whacked');
   hole.classList.add('whacked');
   setTimeout(() => hole.classList.remove('whacked'), 200);
+  setTimeout(() => { if (hole.contains(wrap)) hole.removeChild(wrap); }, 400);
 }
 
 function playSound() {
@@ -731,10 +682,10 @@ function showLevelBanner() {}
 
 function getLevelBreakMessage(level) {
   const messages = [
-    { emoji: '', taunt: 'Too easy? More holes incoming!',   tip: 'Moles are getting sneakier — stay sharp!' },
-    { emoji: '', taunt: 'They\'re speeding up!',            tip: 'Watch all 6 holes — they\'ll try to fake you out.' },
-    { emoji: '', taunt: 'The moles are furious!',           tip: 'Hit fast — they won\'t stay up for long.' },
-    { emoji: '', taunt: 'FINAL LEVEL. 8 holes. Good luck.', tip: 'You\'ll need every bit of speed you\'ve got.' },
+    { taunt: 'Too easy? More holes incoming!',   tip: 'Moles are getting sneakier — stay sharp!' },
+    { taunt: 'They\'re speeding up!',            tip: 'Watch all 6 holes — they\'ll try to fake you out.' },
+    { taunt: 'The moles are furious!',           tip: 'Hit fast — they won\'t stay up for long.' },
+    { taunt: 'FINAL LEVEL. 8 holes. Good luck.', tip: 'You\'ll need every bit of speed you\'ve got.' },
   ];
   return messages[Math.min(level - 1, messages.length - 1)];
 }
@@ -824,19 +775,10 @@ function showEndOverlay(canRestart) {
   overlay.style.display = 'flex';
 
   if (canRestart) {
-    const btn = document.createElement('button');
-    btn.className = 'btn gold';
-    btn.textContent = 'Play Again';
-    btn.style.cssText = 'margin-top:1rem;font-size:1.3rem;padding:0.7rem 2.5rem;';
-    btn.addEventListener('click', () => {
+    overlay.appendChild(makeAccessButton('Play Again', 'controls', 1, () => {
       SquidlyAPI.firebaseSet('game/gameOver', false);
-      if (restartIconKey) {
-        SquidlyAPI.removeIcon(restartIconKey);
-        restartIconKey = null;
-      }
       hostStartGame();
-    });
-    overlay.appendChild(btn);
+    }));
   }
 }
 
