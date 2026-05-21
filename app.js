@@ -108,10 +108,6 @@ let pLocalHit      = false;
 let pCurrentToken  = null;
 let pLastMoleToken = null;
 
-// Incoming primitive values from Firebase (participant side)
-let pIncomingToken     = undefined;
-let pIncomingHoleIndex = undefined;
-
 // ── Switch access ─────────────────────────────────────────────────────────────
 (function watchControlButtons() {
   const CONTROL_GROUPS = new Set(['apps', 'default']);
@@ -207,9 +203,8 @@ function hostStartGame() {
   // Build board first so no stale .mole-wrap elements exist when Firebase listeners fire
   buildBoard(LEVELS[0].holes);
 
-  SquidlyAPI.firebaseSet('game/moleToken',           null);
-  SquidlyAPI.firebaseSet('game/moleHoleIndex',       null);
-  SquidlyAPI.firebaseSet('game/moleHitBy',           null);
+  SquidlyAPI.firebaseSet('game/moleData',  null);
+  SquidlyAPI.firebaseSet('game/moleHitBy', null);
   SquidlyAPI.firebaseSet('game/participantHitToken', null);
   SquidlyAPI.firebaseSet('game/gameOver',            false);
   SquidlyAPI.firebaseSet('game/levelBreak',          false);
@@ -255,9 +250,7 @@ function hostPopMole() {
 
   SquidlyAPI.firebaseSet('game/moleHitBy',           null);
   SquidlyAPI.firebaseSet('game/participantHitToken', null);
-  // Send as two primitives — Firebase does not allow objects as values
-  SquidlyAPI.firebaseSet('game/moleToken',     token);
-  SquidlyAPI.firebaseSet('game/moleHoleIndex', holeIndex);
+  SquidlyAPI.firebaseSet('game/moleData', token + ':' + holeIndex);
 
   const wrap = createMoleWrap();
   hole.appendChild(wrap);
@@ -292,8 +285,7 @@ function hostPopMole() {
     activeMoleToken = null;
     if (hole.contains(wrap)) {
       wrap.classList.remove('up');
-      SquidlyAPI.firebaseSet('game/moleToken',     null);
-      SquidlyAPI.firebaseSet('game/moleHoleIndex', null);
+      SquidlyAPI.firebaseSet('game/moleData', null);
       setTimeout(() => {
         if (hole.contains(wrap)) hole.removeChild(wrap);
         if (state.running) hostSchedulePop();
@@ -311,8 +303,7 @@ function processHit(wrap, hole, cfg) {
 
   SquidlyAPI.firebaseSet('game/score',         state.score);
   SquidlyAPI.firebaseSet('game/hitsThisLevel', state.hitsThisLevel);
-  SquidlyAPI.firebaseSet('game/moleToken',     null);
-  SquidlyAPI.firebaseSet('game/moleHoleIndex', null);
+  SquidlyAPI.firebaseSet('game/moleData', null);
 
   if (hole.contains(wrap)) hole.removeChild(wrap);
   whackMole(wrap, hole);
@@ -342,9 +333,8 @@ function hostLevelUp() {
 
   SquidlyAPI.firebaseSet('game/level',         state.level);
   SquidlyAPI.firebaseSet('game/hitsThisLevel', 0);
-  SquidlyAPI.firebaseSet('game/moleToken',     null);
-  SquidlyAPI.firebaseSet('game/moleHoleIndex', null);
-  SquidlyAPI.firebaseSet('game/levelBreak',    true);
+  SquidlyAPI.firebaseSet('game/moleData',   null);
+  SquidlyAPI.firebaseSet('game/levelBreak', true);
 
   clearTimeout(popTimeout);
   moleTimers.forEach(clearTimeout);
@@ -379,11 +369,10 @@ function startNextLevel() {
   activeMoleToken = null;
 
   // Clear mole paths before anything else so participant gets a clean slate
-  SquidlyAPI.firebaseSet('game/moleToken',     null);
-  SquidlyAPI.firebaseSet('game/moleHoleIndex', null);
-  SquidlyAPI.firebaseSet('game/moleHitBy',     null);
+  SquidlyAPI.firebaseSet('game/moleData',            null);
+  SquidlyAPI.firebaseSet('game/moleHitBy',           null);
   SquidlyAPI.firebaseSet('game/participantHitToken', null);
-  SquidlyAPI.firebaseSet('game/levelBreak',    false);
+  SquidlyAPI.firebaseSet('game/levelBreak',          false);
   SquidlyAPI.firebaseSet('game/running',       true);
   SquidlyAPI.firebaseSet('game/timeLeft',      state.timeLeft);
 
@@ -402,6 +391,7 @@ function hostEndGame() {
   moleTimers.forEach(clearTimeout);
   clearInterval(timerId);
 
+  SquidlyAPI.firebaseSet('game/moleData', null);
   SquidlyAPI.firebaseSet('game/running',  false);
   SquidlyAPI.firebaseSet('game/gameOver', true);
   SquidlyAPI.firebaseSet('game/score',    state.score);
@@ -447,14 +437,8 @@ function initParticipant() {
 
   SquidlyAPI.firebaseOnValue('game/sessionId', (sessionId) => {
     if (!sessionId) return;
-    currentSessionId   = sessionId;
-    pLastMoleToken     = null;
-    pIncomingToken     = undefined;
-    pIncomingHoleIndex = undefined;
+    currentSessionId   = sessionId;    pLastMoleToken = null;
     clearParticipantMole();
-    // Reset incoming pair so first mole of new session waits for a clean pair
-    pIncomingToken     = undefined;
-    pIncomingHoleIndex = undefined;
     state = { running: true, score: 0, level: 0, hitsThisLevel: 0, timeLeft: 0 };
     overlay.style.display   = 'none';
     levelEl.textContent     = 'Level 1';
@@ -517,34 +501,58 @@ function initParticipant() {
     } else if (val === false && currentSessionId) {
       overlay.style.display = 'none';
       state.running = true;
-      pIncomingToken     = undefined;
-      pIncomingHoleIndex = undefined;
       pLastMoleToken     = null;
       clearParticipantMole();
       setTimeout(() => buildBoard(LEVELS[state.level].holes), 50);
     }
   });
 
-  // Listen to the two primitive mole paths and combine them in onMoleUpdate()
-  SquidlyAPI.firebaseOnValue('game/moleToken', val => {
-    pIncomingToken = val ?? null;
-    if (!pIncomingToken) {
-      // Mole cleared — reset both so next mole waits for a fresh pair
-      pIncomingToken     = null;
-      pIncomingHoleIndex = undefined;
-      onMoleUpdate();
+  // Single combined path: "token:holeIndex" or null — no race condition
+  SquidlyAPI.firebaseOnValue('game/moleData', val => {
+    if (!currentSessionId) return;
+    if (!val) {
+      clearParticipantMole();
       return;
     }
-    onMoleUpdate();
-  });
-
-  SquidlyAPI.firebaseOnValue('game/moleHoleIndex', val => {
-    if (val === null || val === undefined) {
-      // null holeIndex is part of a clear — token listener handles the reset
-      return;
+    const parts = val.split(':');
+    const token     = parts[0];
+    const holeIndex = parseInt(parts[1], 10);
+    if (token === pLastMoleToken) return;
+    pLastMoleToken = token;
+    clearParticipantMole();
+    const cfg   = LEVELS[state.level];
+    const holes = getHoles();
+    if (!holes[holeIndex]) return;
+    pCurrentToken = token;
+    const hole = holes[holeIndex];
+    const wrap = createMoleWrap();
+    pCurrentWrap = wrap;
+    pCurrentHole = hole;
+    hole.appendChild(wrap);
+    requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('up')));
+    const onParticipantHit = (e) => {
+      if (e) e.stopPropagation();
+      if (pLocalHit || !state.running) return;
+      if (pCurrentWrap !== wrap) return;
+      pLocalHit = true;
+      cursorEl.classList.add('active');
+      whackMole(wrap, hole);
+      playSound();
+      SquidlyAPI.firebaseSet('game/participantHitToken', pCurrentToken);
+      SquidlyAPI.firebaseSet('game/moleHitBy',           'participant');
+    };
+    wrap.addEventListener('mousedown', onParticipantHit);
+    const wrapper = hole.parentElement;
+    if (wrapper && wrapper.tagName === 'ACCESS-BUTTON') {
+      const accessHandler = (e) => {
+        e.stopPropagation();
+        if (!hole.querySelector('.mole-wrap')) return;
+        wrapper.removeEventListener('access-click', accessHandler);
+        onParticipantHit(null);
+      };
+      wrapper.addEventListener('access-click', accessHandler);
+      setTimeout(() => wrapper.removeEventListener('access-click', accessHandler), cfg.moleTime + 400);
     }
-    pIncomingHoleIndex = val;
-    onMoleUpdate();
   });
 
   SquidlyAPI.firebaseOnValue('game/moleHitBy', (hitBy) => {
@@ -569,69 +577,7 @@ function initParticipant() {
   });
 }
 
-// Called whenever moleToken or moleHoleIndex arrives — waits until both are known
-function onMoleUpdate() {
-  if (!currentSessionId) return;
 
-  // Wait until both values have arrived at least once
-  if (pIncomingToken === undefined || pIncomingHoleIndex === undefined) return;
-
-  // null token means the host cleared the mole
-  if (!pIncomingToken) {
-    clearParticipantMole();
-    return;
-  }
-
-  // holeIndex hasn't arrived yet for this new mole — wait
-  if (pIncomingHoleIndex === undefined) return;
-
-  // Deduplicate — don't re-spawn the same mole
-  if (pIncomingToken === pLastMoleToken) return;
-  pLastMoleToken = pIncomingToken;
-
-  clearParticipantMole();
-
-  const token     = pIncomingToken;
-  const holeIndex = pIncomingHoleIndex;
-  const cfg       = LEVELS[state.level];
-  const holes     = getHoles();
-  if (!holes[holeIndex]) return;
-
-  pCurrentToken = token;
-  const hole = holes[holeIndex];
-  const wrap = createMoleWrap();
-  pCurrentWrap = wrap;
-  pCurrentHole = hole;
-
-  hole.appendChild(wrap);
-  requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('up')));
-
-  const onParticipantHit = (e) => {
-    if (e) e.stopPropagation();
-    if (pLocalHit || !state.running) return;
-    if (pCurrentWrap !== wrap) return;
-    pLocalHit = true;
-    cursorEl.classList.add('active');
-    whackMole(wrap, hole);
-    playSound();
-    SquidlyAPI.firebaseSet('game/participantHitToken', pCurrentToken);
-    SquidlyAPI.firebaseSet('game/moleHitBy',           'participant');
-  };
-
-  wrap.addEventListener('mousedown', onParticipantHit);
-
-  const wrapper = hole.parentElement;
-  if (wrapper && wrapper.tagName === 'ACCESS-BUTTON') {
-    const accessHandler = (e) => {
-      e.stopPropagation();
-      if (!hole.querySelector('.mole-wrap')) return;
-      wrapper.removeEventListener('access-click', accessHandler);
-      onParticipantHit(null);
-    };
-    wrapper.addEventListener('access-click', accessHandler);
-    setTimeout(() => wrapper.removeEventListener('access-click', accessHandler), cfg.moleTime + 400);
-  }
-}
 
 function clearParticipantMole() {
   const holes = getHoles();
