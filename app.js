@@ -515,12 +515,17 @@ function initParticipant() {
 
   // Listen to the two primitive mole paths and combine them in onMoleUpdate()
   SquidlyAPI.firebaseOnValue('game/moleToken', val => {
-    pIncomingToken = (val === undefined) ? undefined : (val ?? null);
+    pIncomingToken = val ?? null;
+    // If token cleared, reset holeIndex too so next mole waits for a fresh pair
+    if (!pIncomingToken) pIncomingHoleIndex = undefined;
     onMoleUpdate();
   });
 
   SquidlyAPI.firebaseOnValue('game/moleHoleIndex', val => {
-    pIncomingHoleIndex = (val === undefined) ? undefined : (val ?? null);
+    // Only accept a holeIndex if we already have a live token waiting
+    if (pIncomingToken) {
+      pIncomingHoleIndex = (val !== null && val !== undefined) ? val : undefined;
+    }
     onMoleUpdate();
   });
 
@@ -553,16 +558,14 @@ function onMoleUpdate() {
   // Wait until both values have arrived at least once
   if (pIncomingToken === undefined || pIncomingHoleIndex === undefined) return;
 
-  // null token means the host cleared the mole.
-  // Reset holeIndex to undefined so the next mole waits for both values.
+  // null token means the host cleared the mole
   if (!pIncomingToken) {
-    pIncomingHoleIndex = undefined;
     clearParticipantMole();
     return;
   }
 
   // holeIndex hasn't arrived yet for this new mole — wait
-  if (pIncomingHoleIndex === undefined || pIncomingHoleIndex === null) return;
+  if (pIncomingHoleIndex === undefined) return;
 
   // Deduplicate — don't re-spawn the same mole
   if (pIncomingToken === pLastMoleToken) return;
