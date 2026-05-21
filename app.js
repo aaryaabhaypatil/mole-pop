@@ -566,13 +566,14 @@ function initParticipant() {
     }
 
     // New mole — deduplicate
-    if (token === pLastMoleToken) return;
+    if (token === pLastMoleToken) { console.log('[MOLE] SKIP duplicate', token); return; }
     pLastMoleToken = token;
     clearParticipantMole();
 
     const cfg   = LEVELS[state.level];
     const holes = getHoles();
-    if (!holes[holeIndex]) return;
+    console.log('[MOLE] spawning token', token, 'holeIndex', holeIndex, 'holes.length', holes.length, 'sessionId', currentSessionId);
+    if (!holes[holeIndex]) { console.log('[MOLE] ABORT no hole at index', holeIndex); return; }
 
     pCurrentToken = token;
     const hole = holes[holeIndex];
