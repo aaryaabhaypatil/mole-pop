@@ -101,9 +101,6 @@ let restartIconKey   = null;
 let currentSessionId = null;
 let activeMoleToken  = null;
 let moleDataClearTimer = null;
-// Host tracks current active mole so participantHitToken can target it directly
-let activeWrap       = null;
-let activeHole       = null;
 
 // Participant state
 let pCurrentWrap   = null;
@@ -179,13 +176,15 @@ function initHost() {
     if (!token) return;
     if (!state.running) return;
     if (token !== activeMoleToken) return;
-    if (!activeWrap || !activeHole) return;
-    const wrap = activeWrap;
-    const hole = activeHole;
-    activeMoleToken = null;
-    activeWrap = null;
-    activeHole = null;
-    processHit(wrap, hole, LEVELS[state.level]);
+    const holes = getHoles();
+    for (let i = 0; i < holes.length; i++) {
+      const wrap = holes[i].querySelector('.mole-wrap');
+      if (wrap && !wrap.classList.contains('whacked')) {
+        activeMoleToken = null;
+        processHit(wrap, holes[i], LEVELS[state.level]);
+        return;
+      }
+    }
   });
 }
 
@@ -201,8 +200,6 @@ function hostStartGame() {
   const sessionId = Date.now().toString();
   state = { running: true, score: 0, level: 0, hitsThisLevel: 0, timeLeft: LEVELS[0].timeLimit };
   activeMoleToken = null;
-  activeWrap = null;
-  activeHole = null;
 
   // Build board first so no stale .mole-wrap elements exist when Firebase listeners fire
   buildBoard(LEVELS[0].holes);
@@ -260,8 +257,6 @@ function hostPopMole() {
   SquidlyAPI.firebaseSet('game/moleData', token + ':' + holeIndex);
 
   const wrap = createMoleWrap();
-  activeWrap = wrap;
-  activeHole = hole;
   hole.appendChild(wrap);
   requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('up')));
 
@@ -269,8 +264,6 @@ function hostPopMole() {
     if (e) e.stopPropagation();
     if (activeMoleToken !== token) return;
     activeMoleToken = null;
-    activeWrap = null;
-    activeHole = null;
     cursorEl.classList.add('active');
     // Signal hit to participant via moleData before clearing
     SquidlyAPI.firebaseSet('game/moleData', token + ':' + holeIndex + ':hit');
@@ -295,8 +288,6 @@ function hostPopMole() {
   const t = setTimeout(() => {
     if (activeMoleToken !== token) return;
     activeMoleToken = null;
-    activeWrap = null;
-    activeHole = null;
     if (hole.contains(wrap)) {
       wrap.classList.remove('up');
       SquidlyAPI.firebaseSet('game/moleData', null);
@@ -318,13 +309,12 @@ function processHit(wrap, hole, cfg) {
   SquidlyAPI.firebaseSet('game/score',         state.score);
   SquidlyAPI.firebaseSet('game/hitsThisLevel', state.hitsThisLevel);
 
-  // Remove from hole immediately so the hole is free for the next mole
-  if (hole.contains(wrap)) hole.removeChild(wrap);
   whackMole(wrap, hole);
   playSound();
 
-  // Clear moleData after whack animation so participant sees :hit before null.
-  // Stored so a new mole pop can cancel it if it comes sooner.
+  // Clear moleData after whack animation completes so participant
+  // has time to receive the :hit signal and play the animation first.
+  // Stored in moleDataClearTimer so a new mole pop can cancel it.
   moleDataClearTimer = setTimeout(() => SquidlyAPI.firebaseSet('game/moleData', null), 450);
 
   if (state.hitsThisLevel >= cfg.hitsToAdvance && state.level < MAX_LEVEL) {
@@ -347,9 +337,7 @@ function hostSchedulePop() {
 function hostLevelUp() {
   state.level++;
   state.hitsThisLevel = 0;
-  activeMoleToken = null;
-  activeWrap = null;
-  activeHole = null;
+  activeMoleToken     = null;
 
   // Remove any un-whacked moles from the board before clearing Firebase
   getHoles().forEach(h => {
