@@ -378,9 +378,14 @@ function startNextLevel() {
   state.timeLeft  = LEVELS[state.level].timeLimit;
   activeMoleToken = null;
 
-  SquidlyAPI.firebaseSet('game/levelBreak', false);
-  SquidlyAPI.firebaseSet('game/running',    true);
-  SquidlyAPI.firebaseSet('game/timeLeft',   state.timeLeft);
+  // Clear mole paths before anything else so participant gets a clean slate
+  SquidlyAPI.firebaseSet('game/moleToken',     null);
+  SquidlyAPI.firebaseSet('game/moleHoleIndex', null);
+  SquidlyAPI.firebaseSet('game/moleHitBy',     null);
+  SquidlyAPI.firebaseSet('game/participantHitToken', null);
+  SquidlyAPI.firebaseSet('game/levelBreak',    false);
+  SquidlyAPI.firebaseSet('game/running',       true);
+  SquidlyAPI.firebaseSet('game/timeLeft',      state.timeLeft);
 
   levelEl.textContent     = 'Level ' + (state.level + 1);
   progressBar.style.width = '0%';
@@ -447,6 +452,9 @@ function initParticipant() {
     pIncomingToken     = undefined;
     pIncomingHoleIndex = undefined;
     clearParticipantMole();
+    // Reset incoming pair so first mole of new session waits for a clean pair
+    pIncomingToken     = undefined;
+    pIncomingHoleIndex = undefined;
     state = { running: true, score: 0, level: 0, hitsThisLevel: 0, timeLeft: 0 };
     overlay.style.display   = 'none';
     levelEl.textContent     = 'Level 1';
@@ -509,6 +517,10 @@ function initParticipant() {
     } else if (val === false && currentSessionId) {
       overlay.style.display = 'none';
       state.running = true;
+      pIncomingToken     = undefined;
+      pIncomingHoleIndex = undefined;
+      pLastMoleToken     = null;
+      clearParticipantMole();
       setTimeout(() => buildBoard(LEVELS[state.level].holes), 50);
     }
   });
@@ -516,16 +528,22 @@ function initParticipant() {
   // Listen to the two primitive mole paths and combine them in onMoleUpdate()
   SquidlyAPI.firebaseOnValue('game/moleToken', val => {
     pIncomingToken = val ?? null;
-    // If token cleared, reset holeIndex too so next mole waits for a fresh pair
-    if (!pIncomingToken) pIncomingHoleIndex = undefined;
+    if (!pIncomingToken) {
+      // Mole cleared — reset both so next mole waits for a fresh pair
+      pIncomingToken     = null;
+      pIncomingHoleIndex = undefined;
+      onMoleUpdate();
+      return;
+    }
     onMoleUpdate();
   });
 
   SquidlyAPI.firebaseOnValue('game/moleHoleIndex', val => {
-    // Only accept a holeIndex if we already have a live token waiting
-    if (pIncomingToken) {
-      pIncomingHoleIndex = (val !== null && val !== undefined) ? val : undefined;
+    if (val === null || val === undefined) {
+      // null holeIndex is part of a clear — token listener handles the reset
+      return;
     }
+    pIncomingHoleIndex = val;
     onMoleUpdate();
   });
 
