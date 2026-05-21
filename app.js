@@ -203,8 +203,10 @@ function hostStartGame() {
   // Build board first so no stale .mole-wrap elements exist when Firebase listeners fire
   buildBoard(LEVELS[0].holes);
 
-  SquidlyAPI.firebaseSet('game/moleData',  null);
-  SquidlyAPI.firebaseSet('game/moleHitBy', null);
+  // sessionId first — participant needs it set before any other listeners fire
+  SquidlyAPI.firebaseSet('game/sessionId',           sessionId);
+  SquidlyAPI.firebaseSet('game/moleData',            null);
+  SquidlyAPI.firebaseSet('game/moleHitBy',           null);
   SquidlyAPI.firebaseSet('game/participantHitToken', null);
   SquidlyAPI.firebaseSet('game/gameOver',            false);
   SquidlyAPI.firebaseSet('game/levelBreak',          false);
@@ -213,7 +215,6 @@ function hostStartGame() {
   SquidlyAPI.firebaseSet('game/hitsThisLevel',       0);
   SquidlyAPI.firebaseSet('game/timeLeft',            state.timeLeft);
   SquidlyAPI.firebaseSet('game/running',             true);
-  SquidlyAPI.firebaseSet('game/sessionId',           sessionId);
 
   updateHUD();
   overlay.style.display = 'none';
@@ -331,10 +332,16 @@ function hostLevelUp() {
   state.hitsThisLevel = 0;
   activeMoleToken     = null;
 
+  // Remove any mole currently on the board before clearing Firebase
+  getHoles().forEach(h => {
+    const w = h.querySelector('.mole-wrap');
+    if (w) h.removeChild(w);
+  });
+
   SquidlyAPI.firebaseSet('game/level',         state.level);
   SquidlyAPI.firebaseSet('game/hitsThisLevel', 0);
-  SquidlyAPI.firebaseSet('game/moleData',   null);
-  SquidlyAPI.firebaseSet('game/levelBreak', true);
+  SquidlyAPI.firebaseSet('game/moleData',      null);
+  SquidlyAPI.firebaseSet('game/levelBreak',    true);
 
   clearTimeout(popTimeout);
   moleTimers.forEach(clearTimeout);
@@ -511,6 +518,11 @@ function initParticipant() {
   SquidlyAPI.firebaseOnValue('game/moleData', val => {
     if (!currentSessionId) return;
     if (!val) {
+      // Mole was cleared by host — if it wasn't hit locally, show whack before removing
+      if (pCurrentWrap && !pLocalHit && !pCurrentWrap.classList.contains('whacked')) {
+        whackMole(pCurrentWrap, pCurrentHole);
+        playSound();
+      }
       clearParticipantMole();
       return;
     }
