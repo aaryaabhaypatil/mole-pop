@@ -441,8 +441,10 @@ function initParticipant() {
   showWaitingOverlay();
 
   SquidlyAPI.firebaseOnValue('game/sessionId', (sessionId) => {
+    console.log('[PARTICIPANT] game/sessionId received:', sessionId);
     if (!sessionId) return;
     currentSessionId   = sessionId;
+    console.log('[PARTICIPANT] session started, building board');
     pLastMoleToken     = null;
     pIncomingToken     = undefined;
     pIncomingHoleIndex = undefined;
@@ -515,11 +517,13 @@ function initParticipant() {
 
   // Listen to the two primitive mole paths and combine them in onMoleUpdate()
   SquidlyAPI.firebaseOnValue('game/moleToken', val => {
+    console.log('[PARTICIPANT] game/moleToken received:', val);
     pIncomingToken = (val === undefined) ? undefined : (val ?? null);
     onMoleUpdate();
   });
 
   SquidlyAPI.firebaseOnValue('game/moleHoleIndex', val => {
+    console.log('[PARTICIPANT] game/moleHoleIndex received:', val);
     pIncomingHoleIndex = (val === undefined) ? undefined : (val ?? null);
     onMoleUpdate();
   });
@@ -548,28 +552,45 @@ function initParticipant() {
 
 // Called whenever moleToken or moleHoleIndex arrives — waits until both are known
 function onMoleUpdate() {
-  if (!currentSessionId) return;
+  console.log('[onMoleUpdate] called — token:', pIncomingToken, 'holeIndex:', pIncomingHoleIndex, 'sessionId:', currentSessionId);
+
+  if (!currentSessionId) {
+    console.log('[onMoleUpdate] SKIP — no sessionId yet');
+    return;
+  }
 
   // Wait until both values have arrived at least once
-  if (pIncomingToken === undefined || pIncomingHoleIndex === undefined) return;
+  if (pIncomingToken === undefined || pIncomingHoleIndex === undefined) {
+    console.log('[onMoleUpdate] SKIP — waiting for both values');
+    return;
+  }
 
   // null token means the host cleared the mole
   if (!pIncomingToken) {
+    console.log('[onMoleUpdate] token is null — clearing mole');
     clearParticipantMole();
     return;
   }
 
   // Deduplicate — don't re-spawn the same mole
-  if (pIncomingToken === pLastMoleToken) return;
+  if (pIncomingToken === pLastMoleToken) {
+    console.log('[onMoleUpdate] SKIP — duplicate token', pIncomingToken);
+    return;
+  }
   pLastMoleToken = pIncomingToken;
 
+  console.log('[onMoleUpdate] SPAWNING mole at hole', pIncomingHoleIndex, 'token', pIncomingToken);
   clearParticipantMole();
 
   const token     = pIncomingToken;
   const holeIndex = pIncomingHoleIndex;
   const cfg       = LEVELS[state.level];
   const holes     = getHoles();
-  if (!holes[holeIndex]) return;
+  console.log('[onMoleUpdate] holes on board:', holes.length, '— need index', holeIndex);
+  if (!holes[holeIndex]) {
+    console.log('[onMoleUpdate] ABORT — holes[' + holeIndex + '] does not exist');
+    return;
+  }
 
   pCurrentToken = token;
   const hole = holes[holeIndex];
@@ -578,6 +599,7 @@ function onMoleUpdate() {
   pCurrentHole = hole;
 
   hole.appendChild(wrap);
+  console.log('[onMoleUpdate] mole appended to hole, adding .up class next frame');
   requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('up')));
 
   const onParticipantHit = (e) => {
