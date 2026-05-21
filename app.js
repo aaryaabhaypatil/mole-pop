@@ -117,7 +117,10 @@ let pLastMoleToken = null;
   const CONTROL_GROUPS = new Set(['apps', 'default']);
   function reassign(el) {
     const grp = el.getAttribute('access-group') || '';
-    if (CONTROL_GROUPS.has(grp)) el.setAttribute('access-group', 'controls');
+    if (CONTROL_GROUPS.has(grp)) {
+      el.setAttribute('access-group', 'controls');
+      el.setAttribute('access-order', '200');
+    }
   }
   function scanAll() { document.querySelectorAll('access-button').forEach(reassign); }
   scanAll();
