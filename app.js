@@ -40,7 +40,7 @@ if (typeof SquidlyAPI === 'undefined') {
       const wrapper = document.createElement('access-button');
       wrapper.dataset.iconKey = key;
       wrapper.setAttribute('access-group', 'controls');
-      wrapper.setAttribute('access-order', String(toolbar.children.length + 1));
+      wrapper.setAttribute('access-order', String(100 + toolbar.children.length + 1));
       wrapper.appendChild(btn);
       wrapper.addEventListener('access-click', (e) => { e.stopPropagation(); cb(); });
       toolbar.appendChild(wrapper);
@@ -673,8 +673,8 @@ function buildBoard(numHoles) {
     const row = Math.floor(i / cols);
 
     const wrapper = document.createElement('access-button');
-    wrapper.setAttribute('access-group', 'holes-row-' + row);
-    wrapper.setAttribute('access-order', String((i % cols) + 1));
+    wrapper.setAttribute('access-group', 'controls');
+    wrapper.setAttribute('access-order', String(i + 1));
     wrapper.appendChild(hole);
 
     board.appendChild(wrapper);
@@ -843,7 +843,7 @@ function makeAccessButton(label, group, order, callback) {
 
   const wrapper = document.createElement('access-button');
   wrapper.setAttribute('access-group', group);
-  wrapper.setAttribute('access-order', String(order));
+  wrapper.setAttribute('access-order', String(group === 'controls' ? 100 + order : order));
   wrapper.appendChild(inner);
 
   wrapper.addEventListener('access-click', (e) => {
