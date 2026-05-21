@@ -688,8 +688,8 @@ function buildBoard(numHoles) {
     const row = Math.floor(i / cols);
 
     const wrapper = document.createElement('access-button');
-    wrapper.setAttribute('access-group', 'controls');
-    wrapper.setAttribute('access-order', String(i + 1));
+    wrapper.setAttribute('access-group', 'holes-row-' + row);
+    wrapper.setAttribute('access-order', String((i % cols) + 1));
     wrapper.appendChild(hole);
 
     board.appendChild(wrapper);
