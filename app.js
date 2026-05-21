@@ -225,7 +225,7 @@ function hostStartGame() {
   overlay.style.display = 'none';
   hostStartTimer();
   clearTimeout(popTimeout);
-  popTimeout = setTimeout(hostPopMole, 800);
+  popTimeout = setTimeout(hostPopMole, 2000);
 }
 
 function hostStartTimer() {
@@ -547,11 +547,9 @@ function initParticipant() {
   //   "token:index"     — new mole to spawn
   //   "token:index:hit" — mole was hit, play whack animation
   SquidlyAPI.firebaseOnValue('game/moleData', val => {
-    console.log('[MOLEDATA] fired val=', val, 'currentSessionId=', currentSessionId);
-    if (!currentSessionId) { console.log('[MOLEDATA] skip: no sessionId'); return; }
+    if (!currentSessionId) return;
 
     if (!val) {
-      console.log('[MOLEDATA] null — clearing');
       clearParticipantMole();
       return;
     }
@@ -560,7 +558,6 @@ function initParticipant() {
     const token     = parts[0];
     const holeIndex = parseInt(parts[1], 10);
     const isHit     = parts[2] === 'hit';
-    console.log('[MOLEDATA] token=', token, 'holeIndex=', holeIndex, 'isHit=', isHit, 'pLastMoleToken=', pLastMoleToken);
 
     if (isHit) {
       // Host hit this mole — show whack if we haven't already hit it locally
