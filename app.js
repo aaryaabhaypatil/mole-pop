@@ -136,6 +136,18 @@ let pLastMoleToken = null;
   observer.observe(document.documentElement, { childList: true, subtree: true });
 })();
 
+function debugAccessButtons() {
+  const all = document.querySelectorAll('access-button');
+  console.log('[ACCESS] total access-buttons:', all.length);
+  all.forEach((el, i) => {
+    console.log('[ACCESS]', i, 
+      'group:', el.getAttribute('access-group'), 
+      'order:', el.getAttribute('access-order'),
+      'text:', el.textContent.trim().slice(0, 30));
+  });
+}
+setTimeout(debugAccessButtons, 2000);
+
 SquidlyAPI.addSessionInfoListener((info) => {
   isHost = info.user && info.user.startsWith('host');
   if (isHost) initHost();
