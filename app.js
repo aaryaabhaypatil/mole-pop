@@ -306,7 +306,6 @@ function processHit(wrap, hole, cfg) {
   SquidlyAPI.firebaseSet('game/hitsThisLevel', state.hitsThisLevel);
   SquidlyAPI.firebaseSet('game/moleData', null);
 
-  if (hole.contains(wrap)) hole.removeChild(wrap);
   whackMole(wrap, hole);
   playSound();
 
@@ -332,10 +331,10 @@ function hostLevelUp() {
   state.hitsThisLevel = 0;
   activeMoleToken     = null;
 
-  // Remove any mole currently on the board before clearing Firebase
+  // Remove any un-whacked moles from the board before clearing Firebase
   getHoles().forEach(h => {
     const w = h.querySelector('.mole-wrap');
-    if (w) h.removeChild(w);
+    if (w && !w.classList.contains('whacked')) h.removeChild(w);
   });
 
   SquidlyAPI.firebaseSet('game/level',         state.level);
@@ -518,11 +517,9 @@ function initParticipant() {
   SquidlyAPI.firebaseOnValue('game/moleData', val => {
     if (!currentSessionId) return;
     if (!val) {
-      // Mole was cleared by host — if it wasn't hit locally, show whack before removing
-      if (pCurrentWrap && !pLocalHit && !pCurrentWrap.classList.contains('whacked')) {
-        whackMole(pCurrentWrap, pCurrentHole);
-        playSound();
-      }
+      // Mole cleared — only whack if moleHitBy listener already marked it
+      // (pLocalHit = participant hit, whacked class = host hit via moleHitBy listener)
+      // For natural expiry: just remove quietly, no sound
       clearParticipantMole();
       return;
     }
@@ -595,7 +592,8 @@ function clearParticipantMole() {
   const holes = getHoles();
   holes.forEach(h => {
     const w = h.querySelector('.mole-wrap');
-    if (w && h.contains(w)) h.removeChild(w);
+    // Don't remove mid-whack — whackMole's own setTimeout will clean it up
+    if (w && h.contains(w) && !w.classList.contains('whacked')) h.removeChild(w);
   });
   pCurrentWrap  = null;
   pCurrentHole  = null;
