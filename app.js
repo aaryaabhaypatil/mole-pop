@@ -466,7 +466,9 @@ function initParticipant() {
 
   SquidlyAPI.firebaseOnValue('game/sessionId', (sessionId) => {
     if (!sessionId) return;
-    currentSessionId   = sessionId;    pLastMoleToken = null;
+    currentSessionId = sessionId;
+    pLastMoleToken   = null;
+    pSeenLevelBreak  = false;
     clearParticipantMole();
     state = { running: true, score: 0, level: 0, hitsThisLevel: 0, timeLeft: 0 };
     overlay.style.display   = 'none';
@@ -510,9 +512,11 @@ function initParticipant() {
     updateProgress();
   });
 
+  let pSeenLevelBreak = false;
   SquidlyAPI.firebaseOnValue('game/levelBreak', val => {
     if (!currentSessionId) return;
     if (val === true) {
+      pSeenLevelBreak = true;
       state.running = false;
       showLevelBanner();
       const msg = getLevelBreakMessage(state.level);
@@ -527,10 +531,12 @@ function initParticipant() {
         ])}
       `;
       overlay.style.display = 'flex';
-    } else if (val === false && currentSessionId) {
+    } else if (val === false && pSeenLevelBreak) {
+      // Only rebuild board on real level transitions, not initial game start reset
+      pSeenLevelBreak = false;
       overlay.style.display = 'none';
       state.running = true;
-      pLastMoleToken     = null;
+      pLastMoleToken = null;
       clearParticipantMole();
       setTimeout(() => buildBoard(LEVELS[state.level].holes), 50);
     }
@@ -541,10 +547,11 @@ function initParticipant() {
   //   "token:index"     — new mole to spawn
   //   "token:index:hit" — mole was hit, play whack animation
   SquidlyAPI.firebaseOnValue('game/moleData', val => {
-    if (!currentSessionId) return;
+    console.log('[MOLEDATA] fired val=', val, 'currentSessionId=', currentSessionId);
+    if (!currentSessionId) { console.log('[MOLEDATA] skip: no sessionId'); return; }
 
     if (!val) {
-      // Natural expiry — remove silently, no sound
+      console.log('[MOLEDATA] null — clearing');
       clearParticipantMole();
       return;
     }
@@ -553,6 +560,7 @@ function initParticipant() {
     const token     = parts[0];
     const holeIndex = parseInt(parts[1], 10);
     const isHit     = parts[2] === 'hit';
+    console.log('[MOLEDATA] token=', token, 'holeIndex=', holeIndex, 'isHit=', isHit, 'pLastMoleToken=', pLastMoleToken);
 
     if (isHit) {
       // Host hit this mole — show whack if we haven't already hit it locally
@@ -566,14 +574,13 @@ function initParticipant() {
     }
 
     // New mole — deduplicate
-    if (token === pLastMoleToken) { console.log('[MOLE] SKIP duplicate', token); return; }
+    if (token === pLastMoleToken) return;
     pLastMoleToken = token;
     clearParticipantMole();
 
     const cfg   = LEVELS[state.level];
     const holes = getHoles();
-    console.log('[MOLE] spawning token', token, 'holeIndex', holeIndex, 'holes.length', holes.length, 'sessionId', currentSessionId);
-    if (!holes[holeIndex]) { console.log('[MOLE] ABORT no hole at index', holeIndex); return; }
+    if (!holes[holeIndex]) return;
 
     pCurrentToken = token;
     const hole = holes[holeIndex];
