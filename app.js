@@ -100,6 +100,7 @@ let startIconKey     = null;
 let restartIconKey   = null;
 let currentSessionId = null;
 let activeMoleToken  = null;
+let moleDataClearTimer = null;
 
 // Participant state
 let pCurrentWrap   = null;
@@ -203,6 +204,7 @@ function hostStartGame() {
   // Build board first so no stale .mole-wrap elements exist when Firebase listeners fire
   buildBoard(LEVELS[0].holes);
 
+  clearTimeout(moleDataClearTimer);
   // sessionId first — participant needs it set before any other listeners fire
   SquidlyAPI.firebaseSet('game/sessionId',           sessionId);
   SquidlyAPI.firebaseSet('game/moleData',            null);
@@ -249,6 +251,7 @@ function hostPopMole() {
   const token     = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   activeMoleToken = token;
 
+  clearTimeout(moleDataClearTimer);
   SquidlyAPI.firebaseSet('game/moleHitBy',           null);
   SquidlyAPI.firebaseSet('game/participantHitToken', null);
   SquidlyAPI.firebaseSet('game/moleData', token + ':' + holeIndex);
@@ -309,9 +312,10 @@ function processHit(wrap, hole, cfg) {
   whackMole(wrap, hole);
   playSound();
 
-  // Clear moleData after whack animation completes (400ms) so participant
-  // has time to receive the :hit signal and play the animation first
-  setTimeout(() => SquidlyAPI.firebaseSet('game/moleData', null), 450);
+  // Clear moleData after whack animation completes so participant
+  // has time to receive the :hit signal and play the animation first.
+  // Stored in moleDataClearTimer so a new mole pop can cancel it.
+  moleDataClearTimer = setTimeout(() => SquidlyAPI.firebaseSet('game/moleData', null), 450);
 
   if (state.hitsThisLevel >= cfg.hitsToAdvance && state.level < MAX_LEVEL) {
     setTimeout(hostLevelUp, 200);
@@ -378,6 +382,7 @@ function startNextLevel() {
   state.timeLeft  = LEVELS[state.level].timeLimit;
   activeMoleToken = null;
 
+  clearTimeout(moleDataClearTimer);
   // Clear mole paths before anything else so participant gets a clean slate
   SquidlyAPI.firebaseSet('game/moleData',            null);
   SquidlyAPI.firebaseSet('game/moleHitBy',           null);
