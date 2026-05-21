@@ -201,6 +201,7 @@ function hostStartGame() {
   const sessionId = Date.now().toString();
   state = { running: true, score: 0, level: 0, hitsThisLevel: 0, timeLeft: LEVELS[0].timeLimit };
   activeMoleToken = null;
+  buildBoard(LEVELS[0].holes);
 
   // Clear mole FIRST before anything else so participant listener sees null
   SquidlyAPI.firebaseSet('game/mole',                null);
@@ -217,7 +218,7 @@ function hostStartGame() {
 
   updateHUD();
   overlay.style.display = 'none';
-  buildBoard(LEVELS[0].holes);
+  
   hostStartTimer();
   setTimeout(hostPopMole, 800);
 }
@@ -505,15 +506,14 @@ function initParticipant() {
   SquidlyAPI.firebaseOnValue('game/mole', (mole) => {
     if (!currentSessionId) return;
 
-    // Always clear whatever is currently on the board
-    clearParticipantMole();
+    if (!mole) { clearParticipantMole(); return; }
 
-    // null = mole was cleared, nothing to spawn
-    if (!mole) return;
-
-    // Deduplicate: don't spawn the same mole token twice
+    // Deduplicate: don't re-spawn the same mole token
     if (mole.token === pLastMoleToken) return;
     pLastMoleToken = mole.token;
+
+   // Clear any previous mole before spawning the new one
+    clearParticipantMole();
 
     const { token, holeIndex } = mole;
     const holes = getHoles();
@@ -522,6 +522,7 @@ function initParticipant() {
     pCurrentToken = token;
     const hole = holes[holeIndex];
     const wrap = createMoleWrap();
+    const cfg = LEVELS[state.level];
 
     pCurrentWrap = wrap;
     pCurrentHole = hole;
