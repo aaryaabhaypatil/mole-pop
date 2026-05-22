@@ -856,7 +856,7 @@ function makeAccessButton(label, group, order, callback) {
   height: 264.12px;
   border: none;
   border-radius: 8px;
-  font-size: 1.1rem;
+  font-size: 2.1rem;
   font-weight: 600;
   cursor: pointer;
   background: hsl(108, 100%, 83%);
