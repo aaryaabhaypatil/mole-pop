@@ -852,18 +852,18 @@ function makeAccessButton(label, group, order, callback) {
   inner.className = 'grid-icon';
   inner.setAttribute('color-theme', 'lightGreen');
   inner.style.cssText = `
-    width: 180px;
-    height: 60px;
-    border: none;
-    border-radius: 8px;
-    font-size: 1.1rem;
-    font-weight: 600;
-    cursor: pointer;
-    background: hsl(108, 100%, 83%);
-    color: black;
-    letter-spacing: 1px;
-    transition: background 0.2s, transform 0.2s;
-  `;
+  width: 346.25px;
+  height: 264.12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: hsl(108, 100%, 83%);
+  color: black;
+  letter-spacing: 1px;
+  transition: background 0.2s, transform 0.2s;
+`;
   inner.textContent = label;
 
   inner.addEventListener('mouseenter', () => inner.style.background = 'hsl(108, 95%, 66.4%)');
