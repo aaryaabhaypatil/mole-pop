@@ -768,7 +768,7 @@ function cardHTML(items) {
     <div style="
       display:flex; flex-direction:column; gap:0.6rem;
       background:rgba(255,255,255,0.08); border-radius:12px;
-      padding:1.2rem 1.8rem; max-width: 560px; width:100%;
+      padding:1.2rem 1.8rem; max-width: 650px; width:100%;
       margin-top:0.6rem;
     ">${rows}</div>
   `;
