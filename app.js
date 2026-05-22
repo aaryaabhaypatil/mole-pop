@@ -757,7 +757,7 @@ function getLevelBreakMessage(level) {
 
 function cardHTML(items) {
   const rows = items.map(item => {
-    let style = 'font-size:1.3rem;';
+    let style = 'font-size:2rem;';
     if (item.gold)    style += 'font-weight:700; color:#ffd700;';
     if (item.muted)   style += 'opacity:0.6;';
     if (item.heading) style += 'font-weight:700; color:#ffd700; font-size:1.5rem; margin-bottom:0.2rem;';
