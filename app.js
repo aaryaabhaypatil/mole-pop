@@ -309,7 +309,12 @@ function hostPopMole() {
 
   // Auto-hide if not hit in time
   const visibleButtons = document.querySelectorAll('access-button');
-  const scanTime = Math.max(cfg.moleTime, visibleButtons.length * 800);
+  // const cfg = LEVELS[state.level];
+  const cols = LEVELS[state.level].holes === 8 ? 4 : LEVELS[state.level].holes <= 4 ? 2 : 3;
+  const rows = Math.ceil(LEVELS[state.level].holes / cols);
+  const numGroups = rows + 1;
+  const maxButtonsInGroup = Math.max(cols, 2);
+  const scanTime = (numGroups + maxButtonsInGroup) * 2000;
 
   const t = setTimeout(() => {
     if (activeMoleToken !== token) return;
