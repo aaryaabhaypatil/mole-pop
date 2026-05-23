@@ -270,6 +270,13 @@ function hostPopMole() {
   const token     = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   activeMoleToken = token;
 
+  // Calculate scan time based on current level layout
+  const cols = cfg.holes === 8 ? 4 : cfg.holes <= 4 ? 2 : 3;
+  const rows = Math.ceil(cfg.holes / cols);
+  const numGroups = rows + 1;
+  const maxButtonsInGroup = Math.max(cols, 2);
+  const scanTime = (numGroups + maxButtonsInGroup) * 2000;
+
   clearTimeout(moleDataClearTimer);
   SquidlyAPI.firebaseSet('game/moleHitBy',           null);
   SquidlyAPI.firebaseSet('game/participantHitToken', null);
@@ -288,7 +295,6 @@ function hostPopMole() {
     activeWrap = null;
     activeHole = null;
     cursorEl.classList.add('active');
-    // Signal hit to participant via moleData before clearing
     SquidlyAPI.firebaseSet('game/moleData', token + ':' + holeIndex + ':hit');
     processHit(wrap, hole, cfg);
   };
@@ -304,18 +310,10 @@ function hostPopMole() {
       onHostHit(null);
     };
     wrapper.addEventListener('access-click', accessHandler);
-    setTimeout(() => wrapper.removeEventListener('access-click', accessHandler), cfg.moleTime + 400);
+    setTimeout(() => wrapper.removeEventListener('access-click', accessHandler), scanTime + 400);
   }
 
   // Auto-hide if not hit in time
-  const visibleButtons = document.querySelectorAll('access-button');
-  // const cfg = LEVELS[state.level];
-  const cols = LEVELS[state.level].holes === 8 ? 4 : LEVELS[state.level].holes <= 4 ? 2 : 3;
-  const rows = Math.ceil(LEVELS[state.level].holes / cols);
-  const numGroups = rows + 1;
-  const maxButtonsInGroup = Math.max(cols, 2);
-  const scanTime = (numGroups + maxButtonsInGroup) * 2000;
-
   const t = setTimeout(() => {
     if (activeMoleToken !== token) return;
     activeMoleToken = null;
