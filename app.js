@@ -308,6 +308,9 @@ function hostPopMole() {
   }
 
   // Auto-hide if not hit in time
+  const visibleButtons = document.querySelectorAll('access-button');
+  const scanTime = Math.max(cfg.moleTime, visibleButtons.length * 800);
+
   const t = setTimeout(() => {
     if (activeMoleToken !== token) return;
     activeMoleToken = null;
@@ -321,7 +324,7 @@ function hostPopMole() {
         if (state.running) hostSchedulePop();
       }, 300);
     }
-  }, cfg.moleTime);
+  }, scanTime);
   moleTimers.push(t);
 }
 
