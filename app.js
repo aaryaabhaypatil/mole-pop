@@ -21,9 +21,9 @@ if (typeof SquidlyAPI === 'undefined') {
         toolbar = document.createElement('div');
         toolbar.id = '_squidly_dev_toolbar';
         toolbar.style.cssText = `
-          position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
-          display: flex; gap: 8px; z-index: 9999;
-          background: rgba(0,0,0,0.6); padding: 8px 14px; border-radius: 10px;
+          position: fixed; bottom: 2vh; left: 50%; transform: translateX(-50%);
+          display: flex; gap: 1vw; z-index: 9999;
+          background: rgba(0,0,0,0.6); padding: 1vh 1.5vw; border-radius: 1vw;
           font-family: sans-serif;
         `;
         document.body.appendChild(toolbar);
@@ -31,8 +31,8 @@ if (typeof SquidlyAPI === 'undefined') {
       const btn = document.createElement('button');
       btn.textContent = opts.displayValue;
       btn.style.cssText = `
-        padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer;
-        font-size: 14px; font-weight: 600;
+        padding: 0.6vh 1.5vw; border-radius: 0.5vw; border: none; cursor: pointer;
+        font-size: 1.4vh; font-weight: 600;
         background: ${opts.type === 'lightGreen' ? '#4caf50' : opts.type === 'action' ? '#e53935' : '#1976d2'};
         color: #fff;
       `;
@@ -92,18 +92,17 @@ let state = {
   hitsThisLevel: 0,
   timeLeft:      0,
 };
-let timerId          = null;
-let moleTimers       = [];
-let popTimeout       = null;
-let isHost           = false;
-let startIconKey     = null;
-let restartIconKey   = null;
-let currentSessionId = null;
-let activeMoleToken  = null;
+let timerId            = null;
+let moleTimers         = [];
+let popTimeout         = null;
+let isHost             = false;
+let startIconKey       = null;
+let restartIconKey     = null;
+let currentSessionId   = null;
+let activeMoleToken    = null;
 let moleDataClearTimer = null;
-// Host tracks current active mole so participantHitToken can target it directly
-let activeWrap       = null;
-let activeHole       = null;
+let activeWrap         = null;
+let activeHole         = null;
 
 // Participant state
 let pCurrentWrap   = null;
@@ -140,8 +139,8 @@ function debugAccessButtons() {
   const all = document.querySelectorAll('access-button');
   console.log('[ACCESS] total access-buttons:', all.length);
   all.forEach((el, i) => {
-    console.log('[ACCESS]', i, 
-      'group:', el.getAttribute('access-group'), 
+    console.log('[ACCESS]', i,
+      'group:', el.getAttribute('access-group'),
       'order:', el.getAttribute('access-order'),
       'text:', el.textContent.trim().slice(0, 30));
   });
@@ -175,7 +174,7 @@ function initHost() {
 
   const participantCursor = document.createElement('div');
   participantCursor.style.cssText = `
-    width: 120px; height: 110px;
+    width: 7vw; height: 7vw;
     position: fixed; top: -9999px; left: -9999px;
     background-image: url('./assets/hammer.png');
     background-size: 100% 100%;
@@ -184,11 +183,13 @@ function initHost() {
     z-index: 998;
     opacity: 0.6;
     filter: hue-rotate(180deg);
+    display: none;
   `;
   document.body.appendChild(participantCursor);
 
   SquidlyAPI.addCursorListener((data) => {
     if (data.source === 'remote' && data.user.startsWith('participant')) {
+      participantCursor.style.display = 'block';
       participantCursor.style.left = data.x + 'px';
       participantCursor.style.top  = data.y + 'px';
     }
@@ -225,11 +226,9 @@ function hostStartGame() {
   activeWrap = null;
   activeHole = null;
 
-  // Build board first so no stale .mole-wrap elements exist when Firebase listeners fire
   buildBoard(LEVELS[0].holes);
 
   clearTimeout(moleDataClearTimer);
-  // sessionId first — participant needs it set before any other listeners fire
   SquidlyAPI.firebaseSet('game/sessionId',           sessionId);
   SquidlyAPI.firebaseSet('game/moleData',            null);
   SquidlyAPI.firebaseSet('game/moleHitBy',           null);
@@ -276,7 +275,6 @@ function hostPopMole() {
   const token     = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   activeMoleToken = token;
 
-  // Calculate scan time based on current level layout
   const cols = cfg.holes === 8 ? 4 : cfg.holes <= 4 ? 2 : 3;
   const rows = Math.ceil(cfg.holes / cols);
   const numGroups = rows + 1;
@@ -319,7 +317,6 @@ function hostPopMole() {
     setTimeout(() => wrapper.removeEventListener('access-click', accessHandler), scanTime + 400);
   }
 
-  // Auto-hide if not hit in time
   const t = setTimeout(() => {
     if (activeMoleToken !== token) return;
     activeMoleToken = null;
@@ -346,13 +343,10 @@ function processHit(wrap, hole, cfg) {
   SquidlyAPI.firebaseSet('game/score',         state.score);
   SquidlyAPI.firebaseSet('game/hitsThisLevel', state.hitsThisLevel);
 
-  // Mark hole as clearing so hostPopMole skips it while animation plays
   hole.dataset.clearing = '1';
   whackMole(wrap, hole);
   playSound();
 
-  // Clear moleData after whack animation so participant sees :hit before null.
-  // Stored so a new mole pop can cancel it if it comes sooner.
   moleDataClearTimer = setTimeout(() => SquidlyAPI.firebaseSet('game/moleData', null), 450);
 
   if (state.hitsThisLevel >= cfg.hitsToAdvance && state.level < MAX_LEVEL) {
@@ -379,7 +373,6 @@ function hostLevelUp() {
   activeWrap = null;
   activeHole = null;
 
-  // Remove any un-whacked moles from the board before clearing Firebase
   getHoles().forEach(h => {
     const w = h.querySelector('.mole-wrap');
     if (w && !w.classList.contains('whacked')) h.removeChild(w);
@@ -405,7 +398,7 @@ function showLevelBreakOverlay() {
   const msg = getLevelBreakMessage(state.level);
   overlay.innerHTML = `
     <img src="./assets/mole.png" alt="Mole" onerror="this.style.display='none'"
-      style="width:120px;height:auto;margin-bottom:0.4rem;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.6));"/>
+      style="width:10vw;height:auto;margin-bottom:0.4rem;filter:drop-shadow(0 0.4vh 1.2vh rgba(0,0,0,0.6));"/>
     <h2>Level ${state.level} Complete!</h2>
     ${cardHTML([
       { label: msg.taunt, gold: true },
@@ -423,13 +416,12 @@ function startNextLevel() {
   activeMoleToken = null;
 
   clearTimeout(moleDataClearTimer);
-  // Clear mole paths before anything else so participant gets a clean slate
   SquidlyAPI.firebaseSet('game/moleData',            null);
   SquidlyAPI.firebaseSet('game/moleHitBy',           null);
   SquidlyAPI.firebaseSet('game/participantHitToken', null);
   SquidlyAPI.firebaseSet('game/levelBreak',          false);
-  SquidlyAPI.firebaseSet('game/running',       true);
-  SquidlyAPI.firebaseSet('game/timeLeft',      state.timeLeft);
+  SquidlyAPI.firebaseSet('game/running',             true);
+  SquidlyAPI.firebaseSet('game/timeLeft',            state.timeLeft);
 
   levelEl.textContent     = 'Level ' + (state.level + 1);
   progressBar.style.width = '0%';
@@ -457,7 +449,7 @@ function hostEndGame() {
 }
 
 
-
+// ─── PARTICIPANT ──────────────────────────────────────────────────────────────
 
 function initParticipant() {
   cursorEl.style.display = 'block';
@@ -470,7 +462,7 @@ function initParticipant() {
 
   const hostCursor = document.createElement('div');
   hostCursor.style.cssText = `
-    width: 120px; height: 100px;
+    width: 7vw; height: 7vw;
     position: fixed; top: -9999px; left: -9999px;
     background-image: url('./assets/hammer.png');
     background-size: 100% 100%;
@@ -479,11 +471,13 @@ function initParticipant() {
     z-index: 998;
     opacity: 0.6;
     filter: hue-rotate(180deg);
+    display: none;
   `;
   document.body.appendChild(hostCursor);
 
   SquidlyAPI.addCursorListener((data) => {
     if (data.source === 'remote' && data.user.startsWith('host')) {
+      hostCursor.style.display = 'block';
       hostCursor.style.left = data.x + 'px';
       hostCursor.style.top  = data.y + 'px';
     }
@@ -549,7 +543,7 @@ function initParticipant() {
       const msg = getLevelBreakMessage(state.level);
       overlay.innerHTML = `
         <img src="./assets/mole.png" alt="Mole" onerror="this.style.display='none'"
-          style="width:120px;height:auto;margin-bottom:0.4rem;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.6));"/>
+          style="width:10vw;height:auto;margin-bottom:0.4rem;filter:drop-shadow(0 0.4vh 1.2vh rgba(0,0,0,0.6));"/>
         <h2>Level ${state.level} Complete!</h2>
         ${cardHTML([
           { label: msg.taunt, gold: true },
@@ -559,7 +553,6 @@ function initParticipant() {
       `;
       overlay.style.display = 'flex';
     } else if (val === false && pSeenLevelBreak) {
-      // Only rebuild board on real level transitions, not initial game start reset
       pSeenLevelBreak = false;
       overlay.style.display = 'none';
       state.running = true;
@@ -583,7 +576,6 @@ function initParticipant() {
     const isHit     = parts[2] === 'hit';
 
     if (isHit) {
-      // Host hit this mole — show whack if we haven't already hit it locally
       if (!pLocalHit && pCurrentWrap && pCurrentToken === token) {
         pLocalHit = true;
         if (!pCurrentHole.contains(pCurrentWrap)) pCurrentHole.appendChild(pCurrentWrap);
@@ -593,7 +585,6 @@ function initParticipant() {
       return;
     }
 
-    // New mole — deduplicate
     if (token === pLastMoleToken) return;
     pLastMoleToken = token;
     clearParticipantMole();
@@ -647,12 +638,10 @@ function initParticipant() {
 }
 
 
-
 function clearParticipantMole() {
   const holes = getHoles();
   holes.forEach(h => {
     const w = h.querySelector('.mole-wrap');
-    // Don't remove mid-whack — whackMole's own setTimeout will clean it up
     if (w && h.contains(w) && !w.classList.contains('whacked')) h.removeChild(w);
   });
   pCurrentWrap  = null;
@@ -671,27 +660,30 @@ function buildBoard(numHoles) {
 
   const cols = numHoles === 8 ? 4 : numHoles <= 4 ? 2 : 3;
   const rows = Math.ceil(numHoles / cols);
-  const gap  = 32;
 
-  const maxSizeByHoles = { 4: 240, 6: 240, 8: 170 };
-  const maxCap = maxSizeByHoles[numHoles] ?? 240;
+  // Board area: 75vw wide, 75vh tall
+  const gapVw  = 2;   // gap in vw units
+  const gapPx  = window.innerWidth  * 0.75 * (gapVw / 100);
 
-  const availableW = window.innerWidth * 0.92;
-  const availableH = window.innerHeight - 180;
+  const availableW = window.innerWidth  * 0.75 - (cols + 1) * gapPx;
+  const availableH = window.innerHeight * 0.75 - (rows + 1) * gapPx;
 
-  const sizeByW = Math.floor((availableW - (cols + 1) * gap) / cols);
-  const sizeByH = Math.floor((availableH - (rows + 1) * gap) / rows);
-  const size    = Math.min(sizeByW, sizeByH, maxCap);
+  const sizeByW = Math.floor(availableW / cols);
+  const sizeByH = Math.floor(availableH / rows);
+  const size    = Math.min(sizeByW, sizeByH);
 
-  board.style.gridTemplateColumns = `repeat(${cols}, ${size}px)`;
-  board.style.gap         = gap + 'px';
-  board.style.paddingLeft = numHoles >= 6 ? '80px' : '0px';
+  // Express hole size as vw so it's relative
+  const sizeVw = (size / window.innerWidth * 100).toFixed(2);
+
+  board.style.gridTemplateColumns = `repeat(${cols}, ${sizeVw}vw)`;
+  board.style.gap                 = gapVw + 'vw';
+  board.style.padding             = '0';
 
   for (let i = 0; i < numHoles; i++) {
     const hole = document.createElement('div');
     hole.className    = 'hole';
-    hole.style.width  = size + 'px';
-    hole.style.height = size + 'px';
+    hole.style.width  = sizeVw + 'vw';
+    hole.style.height = sizeVw + 'vw';
 
     const row = Math.floor(i / cols);
 
@@ -769,19 +761,19 @@ function getLevelBreakMessage(level) {
 
 function cardHTML(items) {
   const rows = items.map(item => {
-    let style = 'font-size:2rem;';
+    let style = 'font-size: 2vh;';
     if (item.gold)    style += 'font-weight:700; color:#ffd700;';
     if (item.muted)   style += 'opacity:0.6;';
-    if (item.heading) style += 'font-weight:700; color:#ffd700; font-size:1.5rem; margin-bottom:0.2rem;';
+    if (item.heading) style += 'font-weight:700; color:#ffd700; font-size:1.8vh; margin-bottom:0.2rem;';
     return `<p style="${style}">${item.label}</p>`;
   }).join('');
 
   return `
     <div style="
-      display:flex; flex-direction:column; gap:0.6rem;
-      background:rgba(255,255,255,0.08); border-radius:12px;
-      padding:1.2rem 1.8rem; max-width: 60rem; width:100%;
-      margin-top:0.6rem;
+      display:flex; flex-direction:column; gap:0.6vh;
+      background:rgba(255,255,255,0.08); border-radius:1vw;
+      padding:1.5vh 2vw; max-width:60vw; width:100%;
+      margin-top:0.6vh;
     ">${rows}</div>
   `;
 }
@@ -789,13 +781,13 @@ function cardHTML(items) {
 function moleImgHTML() {
   return `
     <div style="
-      width:120px; height:120px;
+      width:10vw; height:10vw;
       background-image: url('./assets/mole.png');
       background-size: contain;
       background-repeat: no-repeat;
       background-position: center;
       margin-bottom:0.4rem;
-      filter:drop-shadow(0 4px 12px rgba(0,0,0,0.6));
+      filter:drop-shadow(0 0.4vh 1.2vh rgba(0,0,0,0.6));
     "></div>
   `;
 }
@@ -829,7 +821,7 @@ function showWaitingOverlay() {
       { label: '&nbsp;Beat the clock before time runs out!' },
       { label: '&nbsp;More holes appear as you progress' },
     ])}
-    <p style="opacity:0.5; font-size:1.1rem; margin-top:0.4rem;">Waiting for the host to start…</p>
+    <p style="opacity:0.5; font-size:1.6vh; margin-top:0.4rem;">Waiting for the host to start…</p>
   `;
   overlay.style.display = 'flex';
 }
@@ -864,18 +856,18 @@ function makeAccessButton(label, group, order, callback) {
   inner.className = 'grid-icon';
   inner.setAttribute('color-theme', 'lightGreen');
   inner.style.cssText = `
-  width: 346.25px;
-  height: 264.12px;
-  border: none;
-  border-radius: 8px;
-  font-size: 2.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  background: hsl(108, 100%, 83%);
-  color: black;
-  letter-spacing: 1px;
-  transition: background 0.2s, transform 0.2s;
-`;
+    width: 22vw;
+    height: 15vh;
+    border: none;
+    border-radius: 0.8vw;
+    font-size: 2.2vh;
+    font-weight: 600;
+    cursor: pointer;
+    background: hsl(108, 100%, 83%);
+    color: black;
+    letter-spacing: 0.1vw;
+    transition: background 0.2s, transform 0.2s;
+  `;
   inner.textContent = label;
 
   inner.addEventListener('mouseenter', () => inner.style.background = 'hsl(108, 95%, 66.4%)');
@@ -887,7 +879,7 @@ function makeAccessButton(label, group, order, callback) {
   wrapper.setAttribute('access-group', group);
   wrapper.setAttribute('access-order', String(group === 'controls' ? 100 + order : order));
   wrapper.appendChild(inner);
-  wrapper.style.marginTop = '1.5rem';
+  wrapper.style.marginTop = '1.5vh';
 
   wrapper.addEventListener('access-click', (e) => {
     e.stopPropagation();

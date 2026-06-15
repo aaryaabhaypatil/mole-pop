@@ -16,33 +16,47 @@
     <!-- Level-up banner -->
     <div id="level-banner"></div>
 
-    <!-- HUD -->
-    <div id="hud">
-      <div class="hud-box">
-        <div class="hud-label">Score</div>
-        <div class="hud-val" id="score-el">00</div>
-      </div>
-      <span class="level-badge" id="level-el">Level 1</span>
-      <div class="hud-box">
-        <div class="hud-label">Time</div>
-        <div class="hud-val" id="time-el">30s</div>
-      </div>
+    <!-- Left panel: exit/controls -->
+    <div id="left-panel">
+      <!-- Squidly exit button renders here via access-button -->
     </div>
 
-    <!-- Progress bar -->
-    <p id="progress-label">hits to next level</p>
-    <div id="progress-bar-wrap">
-      <div id="progress-bar"></div>
-    </div>
+    <!-- Right panel -->
+    <div id="right-panel">
 
-    <!-- Game board (holes injected by JS) -->
-    <div id="board"></div>
+      <!-- Top 25vh: HUD -->
+      <div id="hud">
+        <div class="hud-box">
+          <div class="hud-label">Score</div>
+          <div class="hud-val" id="score-el">00</div>
+        </div>
+        <div class="hud-box level-box">
+          <div class="hud-label">Level</div>
+          <div class="hud-val level-badge" id="level-el">Level 1</div>
+        </div>
+        <div class="hud-box">
+          <div class="hud-label">Time</div>
+          <div class="hud-val" id="time-el">30s</div>
+        </div>
+
+        <!-- Progress sits inside HUD at the bottom -->
+        <div id="progress-row">
+          <p id="progress-label"></p>
+          <div id="progress-bar-wrap">
+            <div id="progress-bar"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom 75vh: Game board -->
+      <div id="board"></div>
+
+    </div>
 
     <!-- Start / Game-over overlay -->
     <div id="overlay">
       <h2>Whack-a-Mole!</h2>
       <p>Hit moles to score. Level up by hitting enough — more holes appear as you improve!</p>
-      <button class="btn gold" id="start-btn">Start Game</button>
     </div>
 
   </body>
