@@ -209,8 +209,16 @@ body {
   justify-content: center;
   gap: 1rem;
   z-index: 20;
-  padding: 2vh 5vw 2vh 30vw;
-  box-sizing: border-box;
+  padding: 0;
+}
+#overlay-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  width: 70vw;
+  margin-left: 30vw;
 }
 #overlay h2 { font-size: 3rem; text-align: center; }
 #overlay p  { font-size: 2rem; opacity: 0.9; text-align: center; max-width: 60vw; line-height: 1.5; }
