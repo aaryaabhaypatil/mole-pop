@@ -451,7 +451,7 @@ function hostEndGame() {
 }
 
 
-// ─── PARTICIPANT ──────────────────────────────────────────────────────────────
+
 
 function initParticipant() {
   cursorEl.style.display = 'block';
@@ -885,6 +885,7 @@ function makeAccessButton(label, group, order, callback) {
 
   wrapper.addEventListener('access-click', (e) => {
     e.stopPropagation();
+    e.waitFor(new Promise(res => setTimeout(res, 1000)));
     callback();
   });
   inner.addEventListener('click', callback);
