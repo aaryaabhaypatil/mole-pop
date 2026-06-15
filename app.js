@@ -148,10 +148,16 @@ function debugAccessButtons() {
 }
 setTimeout(debugAccessButtons, 2000);
 
+let _participantInited = false;
+
 SquidlyAPI.addSessionInfoListener((info) => {
   isHost = info.user && info.user.startsWith('host');
   if (isHost) initHost();
-  else        initParticipant();
+  else {
+    if (_participantInited) return;
+    _participantInited = true;
+    initParticipant();
+  }
 });
 
 
