@@ -199,17 +199,27 @@ body {
 #level-banner.show { transform: translate(-50%, -50%) scale(1); }
 
 /* ── Overlay ──────────────────────────────────────────────── */
-#overlay {
+#overlay-bg {
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.92);
+  z-index: 20;
+  pointer-events: none;
+}
+
+#overlay {
+  position: fixed;
+  top: 0;
+  left: 25vw;
+  width: 70vw;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 1rem;
-  z-index: 20;
-  padding: 0;
+  z-index: 21;
+  padding: 2vh 0;
 }
 #overlay-content {
   display: flex;

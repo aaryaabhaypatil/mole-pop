@@ -243,6 +243,7 @@ function hostStartGame() {
 
   updateHUD();
   overlay.style.display = 'none';
+  document.getElementById('overlay-bg').style.display = 'none';
   hostStartTimer();
   clearTimeout(popTimeout);
   popTimeout = setTimeout(hostPopMole, 2000);
@@ -406,6 +407,7 @@ function showLevelBreakOverlay() {
       { label: 'Score so far: <strong style="color:#ffd700;">' + state.score + '</strong>', muted: true },
     ])}
   `;
+  document.getElementById('overlay-bg').style.display = 'block';
   overlay.style.display = 'flex';
   overlay.appendChild(makeAccessButton('Next Level', 'controls', 1, () => startNextLevel()));
 }
@@ -427,6 +429,7 @@ function startNextLevel() {
   progressBar.style.width = '0%';
 
   overlay.style.display = 'none';
+  document.getElementById('overlay-bg').style.display = 'none';
   buildBoard(LEVELS[state.level].holes);
   clearTimeout(popTimeout);
   popTimeout = setTimeout(hostPopMole, 800);
@@ -506,6 +509,7 @@ function initParticipant() {
     if (running === true && !state.running) {
       state.running = true;
       overlay.style.display = 'none';
+      document.getElementById('overlay-bg').style.display = 'none';
     }
   });
 
@@ -551,10 +555,12 @@ function initParticipant() {
           { label: 'Score so far: <strong style="color:#ffd700;">' + state.score + '</strong>', muted: true },
         ])}
       `;
+      document.getElementById('overlay-bg').style.display = 'block';
       overlay.style.display = 'flex';
     } else if (val === false && pSeenLevelBreak) {
       pSeenLevelBreak = false;
       overlay.style.display = 'none';
+      document.getElementById('overlay-bg').style.display = 'none';
       state.running = true;
       pLastMoleToken = null;
       clearParticipantMole();
@@ -806,6 +812,7 @@ function showStartOverlay() {
     ])}
   `;
   overlay.appendChild(makeAccessButton('Start Game', 'controls', 1, () => hostStartGame()));
+  document.getElementById('overlay-bg').style.display = 'block';
   overlay.style.display = 'flex';
 }
 
@@ -823,6 +830,7 @@ function showWaitingOverlay() {
     ])}
     <p style="opacity:0.5; font-size:1.6vh; margin-top:0.4rem;">Waiting for the host to start…</p>
   `;
+  document.getElementById('overlay-bg').style.display = 'block';
   overlay.style.display = 'flex';
 }
 
@@ -841,6 +849,7 @@ function showEndOverlay(canRestart) {
       { label: 'Final score: <strong style="color:#ffd700;">' + state.score + '</strong>' },
     ])}
   `;
+  document.getElementById('overlay-bg').style.display = 'block';
   overlay.style.display = 'flex';
 
   if (canRestart) {
