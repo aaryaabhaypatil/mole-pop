@@ -503,6 +503,7 @@ function initParticipant() {
     clearParticipantMole();
     state = { running: true, score: 0, level: 0, hitsThisLevel: 0, timeLeft: 0 };
     overlay.style.display   = 'none';
+    document.getElementById('overlay-bg').style.display = 'none';
     levelEl.textContent     = 'Level 1';
     progressBar.style.width = '0%';
     progressLbl.textContent = '';
