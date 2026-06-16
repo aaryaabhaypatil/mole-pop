@@ -4,7 +4,17 @@
 //   console.log('overlay display:', overlay.style.display);
 // }, 2000);
 
+SquidlyAPI.getSettings('', (val) => {
+  console.log('getSettings root:', JSON.stringify(val));
+});
 
+SquidlyAPI.addSettingsListener((val) => {
+  console.log('settingsListener:', JSON.stringify(val));
+});
+
+SquidlyAPI.addSessionInfoListener((info) => {
+  console.log('sessionInfo:', JSON.stringify(info));
+});
 if (typeof SquidlyAPI === 'undefined') {
   const _db = {};
   const _listeners = {};
