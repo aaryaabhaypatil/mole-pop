@@ -1,3 +1,10 @@
+setInterval(() => {
+  const bg = document.getElementById('overlay-bg');
+  console.log('overlay-bg display:', bg.style.display);
+  console.log('overlay display:', overlay.style.display);
+}, 2000);
+
+
 if (typeof SquidlyAPI === 'undefined') {
   const _db = {};
   const _listeners = {};
