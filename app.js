@@ -1,8 +1,8 @@
-setInterval(() => {
-  const bg = document.getElementById('overlay-bg');
-  console.log('overlay-bg display:', bg.style.display);
-  console.log('overlay display:', overlay.style.display);
-}, 2000);
+// setInterval(() => {
+//   const bg = document.getElementById('overlay-bg');
+//   console.log('overlay-bg display:', bg.style.display);
+//   console.log('overlay display:', overlay.style.display);
+// }, 2000);
 
 
 if (typeof SquidlyAPI === 'undefined') {
@@ -414,7 +414,7 @@ function showLevelBreakOverlay() {
       { label: 'Score so far: <strong style="color:#ffd700;">' + state.score + '</strong>', muted: true },
     ])}
   `;
-  console.trace('overlay-bg set to BLOCK-1 here');
+  // console.trace('overlay-bg set to BLOCK-1 here');
   document.getElementById('overlay-bg').style.display = 'block';
   overlay.style.display = 'flex';
   overlay.appendChild(makeAccessButton('Next Level', 'controls', 1, () => startNextLevel()));
@@ -564,7 +564,7 @@ function initParticipant() {
           { label: 'Score so far: <strong style="color:#ffd700;">' + state.score + '</strong>', muted: true },
         ])}
       `;
-      console.trace('overlay-bg set to BLOCK- 2 here');
+      // console.trace('overlay-bg set to BLOCK- 2 here');
       document.getElementById('overlay-bg').style.display = 'block';
       overlay.style.display = 'flex';
     } else if (val === false && pSeenLevelBreak) {
@@ -822,7 +822,7 @@ function showStartOverlay() {
     ])}
   `;
   overlay.appendChild(makeAccessButton('Start Game', 'controls', 1, () => hostStartGame()));
-  console.trace('overlay-bg set to BLOCK-3 here');
+  // console.trace('overlay-bg set to BLOCK-3 here');
   document.getElementById('overlay-bg').style.display = 'block';
   overlay.style.display = 'flex';
 }
@@ -841,7 +841,7 @@ function showWaitingOverlay() {
     ])}
     <p style="opacity:0.5; font-size:1.6vh; margin-top:0.4rem;">Waiting for the host to start…</p>
   `;
-  console.trace('overlay-bg set to BLOCK-4 here');
+  // console.trace('overlay-bg set to BLOCK-4 here');
   document.getElementById('overlay-bg').style.display = 'block';
   overlay.style.display = 'flex';
 }
@@ -861,7 +861,7 @@ function showEndOverlay(canRestart) {
       { label: 'Final score: <strong style="color:#ffd700;">' + state.score + '</strong>' },
     ])}
   `;
-  console.trace('overlay-bg set to BLOCK-5 here');
+  // console.trace('overlay-bg set to BLOCK-5 here');
   document.getElementById('overlay-bg').style.display = 'block';
   overlay.style.display = 'flex';
 
